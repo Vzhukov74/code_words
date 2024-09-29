@@ -7,48 +7,75 @@
 
 import SwiftUI
 
-struct Teams: Identifiable, Hashable {
-    let id: String
-    let blue: [Player]
-    let red: [Player]
-}
-
-extension Teams {
-    static var random: Teams {
-        Teams(
-            id: UUID().uuidString,
-            blue: [Player.random, Player.random, Player.random, Player.random],
-            red: [Player.random, Player.random, Player.random, Player.random]
-        )
-    }
-}
-
 struct TeamsView: View {
     
-    let teams: Teams
+    let state: State
+    
+    let onBecameRedLeader: () -> Void
+    let onJoinRed: () -> Void
+    let onBecameBlueLeader: () -> Void
+    let onJoinBlue: () -> Void
     
     var body: some View {
         HStack(spacing: 0) {
             VStack(alignment: .leading) {
-                ForEach(teams.red, id: \.self) { player in
-                    PlayerView(player: player)
-                        .padding(.horizontal, 16)
-                }
+                TeamView(
+                    leader: state.readTeamLeader,
+                    players: state.redTeam,
+                    onBecameLeader: onBecameRedLeader,
+                    onJoin: onJoinRed
+                )
+                    .padding(.horizontal, 8)
             }
             .frame(maxWidth: .infinity)
-            .background { Color.red }
             VStack(alignment: .leading) {
-                ForEach(teams.blue, id: \.self) { player in
-                    PlayerView(player: player)
-                        .padding(.horizontal, 16)
-                }
+                TeamView(
+                    leader: state.blueTeamLeader,
+                    players: state.blueTeam,
+                    onBecameLeader: onBecameBlueLeader,
+                    onJoin: onJoinBlue
+                )
+                    .padding(.horizontal, 8)
             }
             .frame(maxWidth: .infinity)
-            .background { Color.blue }
         }
+            .frame(minHeight: 60)
+            .background {
+                HStack(spacing: 0) {
+                    Color.red.frame(maxWidth: .infinity)
+                    Color.blue.frame(maxWidth: .infinity)
+                }
+            }
     }
 }
 
-#Preview {
-    TeamsView(teams: .random)
+private struct TeamView: View {
+    
+    let leader: Player?
+    let players: [Player]
+    let onBecameLeader: () -> Void
+    let onJoin: () -> Void
+    
+    var body: some View {
+        VStack(spacing: 8) {
+            leaderView
+            Divider()
+            ForEach(players, id: \.self) { player in
+                PlayerView(player: player)
+            }
+            Divider()
+            Text("join")
+                .onTapGesture { onJoin() }
+        }
+    }
+    
+    @ViewBuilder
+    private var leaderView: some View {
+        if leader != nil {
+            PlayerView(player: leader!)
+        } else {
+            Text("became a team master")
+                .onTapGesture { onBecameLeader() }
+        }
+    }
 }
