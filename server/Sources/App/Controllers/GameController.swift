@@ -22,7 +22,7 @@ final class GameController {
     func create(req: Request) throws -> EventLoopFuture<Response> {
         let host = try req.content.decode(Game.Player.self, as: .json)
         let id = UUID().uuidString.lowercased().replacingOccurrences(of: "-", with: "")
-        let state = Game.State(id: id, host: host, words: Words.prepareWords())
+        let state = Game.State(id: id, host: host)
         let game = Game(id: id, host: host, state: state)
         
         return try req.application.gameService.add(game: game, on: req).map {
@@ -77,12 +77,19 @@ final class Words {
         return words().map {
             let index = (0..<colors.count).randomElement()!
             let color = colors.remove(at: index)
-            return Game.Word(word: $0, color: color, isOpen: false, elections: [])
+            return Game.Word(word: $0, color: Game.WColor(rawValue: color)!)
         }
     }
     
     static func colors() -> [Int] {
-        [1, 1, 2, 2, 0, 3, 0, 0, 1, 2, 1, 2, 1, 0, 0, 0, 1, 2 ,1, 0, 0, 2, 1, 2, 0].shuffled()
+        let values = [
+            [1, 1, 2, 2, 0, 3, 0, 0, 1, 2, 1, 2, 1, 0, 2, 0, 1, 2 ,1, 2, 0, 2, 1, 2, 0], //1-8 2-9
+            [1, 1, 2, 2, 0, 3, 2, 0, 2, 2, 1, 2, 1, 0, 0, 0, 1, 2 ,1, 2, 0, 1, 1, 1, 0], //1-9 2-8
+            [1, 1, 0, 0, 2, 0, 2, 0, 1, 2, 1, 2, 1, 3, 2, 0, 1, 2 ,0, 2, 1, 2, 1, 2, 0], //1-8 2-9
+            [1, 0, 2, 0, 1, 1, 2, 0, 2, 2, 1, 2, 1, 3, 0, 1, 0, 2 ,1, 0, 2, 1, 1, 0, 2]  //1-9 2-8
+        ]
+        
+        return values.randomElement()!.shuffled()
     }
     
     static func words() -> [String] {

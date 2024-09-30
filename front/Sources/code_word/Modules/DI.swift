@@ -15,6 +15,7 @@ final class DI {
     lazy var network = Network()
     lazy var mainState = MainState()
     lazy var userService: IUserService = UserService()
+    lazy var socketService = SocketService()
     
     var user: User?
     var roomId: String?

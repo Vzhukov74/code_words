@@ -16,6 +16,11 @@ struct Request: Codable {
     let user: User
 }
 
+enum Team: String {
+    case red
+    case blue
+}
+
 struct State: Codable {
     let id: String
     let hostId: String
@@ -24,6 +29,10 @@ struct State: Codable {
     var redTeam: [Player]
     var blueTeam: [Player] = []
     var grayTeam: [Player] = []
+    var phase: Phase = .red
+    
+    var redLeaderWords: [LeaderWord] = []
+    var blueLeaderWords: [LeaderWord] = []
     
     var words: [Word] = []
     
@@ -35,16 +44,37 @@ struct State: Codable {
     }
 }
 
+struct LeaderWord: Codable {
+    let word: String
+    let number: String
+}
+
+enum Phase: String, Codable {
+    case idle
+    case redLeader
+    case red
+    case blueLeader
+    case blue
+    case end
+}
+
 struct Player: Codable, Hashable {
     let id: String
     let name: String
 }
 
+enum WColor: Int, Codable {
+    case gray
+    case red
+    case blue
+    case black
+}
+
 struct Word: Codable, Hashable {
     let word: String
-    let color: Int
-    var isOpen: Bool
-    var elections: [Player]
+    let color: WColor
+    var isOpen: Bool = false
+    var elections: [Player] = []
 }
 
 final class Network {

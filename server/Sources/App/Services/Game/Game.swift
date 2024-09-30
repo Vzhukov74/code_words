@@ -5,19 +5,41 @@
 //  Created by Владислав Жуков on 22.08.2024.
 //
 
+
 import Vapor
 
-final class Game {
+final class Game: Sendable {
     let id: String
     let host: Player
     
-    var state: State
-    var links: [String: WebSocketContext] = [:]
+    private let lock = Lock()
+    
+    private var _state: State
+    private var _links: [String: WebSocketContext]
+    
+    private(set) var state: State {
+        get { _state }
+        set {
+            lock.lock()
+            _state = newValue
+            lock.unlock()
+        }
+    }
+    
+    private(set) var links: [String: WebSocketContext] {
+        get { _links }
+        set {
+            lock.lock()
+            _links = newValue
+            lock.unlock()
+        }
+    }
     
     init(id: String, host: Player, state: State) {
         self.id = id
         self.host = host
-        self.state = state
+        self._state = state
+        self._links = [:]
     }
     
     func join(player: Player) {
@@ -31,6 +53,10 @@ final class Game {
     func setContext(_ context: WebSocketContext, forPlayer id: String) {
         links[id] = context
     }
+    
+    func new(state: State) {
+        self.state = state
+    }
 }
 
 extension Game {
@@ -42,15 +68,23 @@ extension Game {
         var redTeam: [Player]
         var blueTeam: [Player] = []
         var grayTeam: [Player] = []
+        var phase: Phase = .idle
+        
+        var redLeaderWords: [LeaderWord] = []
+        var blueLeaderWords: [LeaderWord] = []
         
         var words: [Word] = []
         
-        init(id: String, host: Player, words: [Word]) {
+        init(id: String, host: Player) {
             self.id = id
             self.redTeam = [host]
-            self.words = words
             self.hostId = host.id
         }
+    }
+    
+    struct LeaderWord: Content {
+        let word: String
+        let number: String
     }
     
     struct Player: Content {
@@ -58,11 +92,27 @@ extension Game {
         let name: String
     }
     
+    enum WColor: Int, Content {
+        case gray
+        case red
+        case blue
+        case black
+    }
+    
     struct Word: Content {
         let word: String
-        let color: Int
-        var isOpen: Bool
-        var elections: [Player]
+        let color: WColor
+        var isOpen: Bool = false
+        var elections: [Player] = []
+    }
+    
+    enum Phase: String, Content {
+        case idle
+        case redLeader
+        case red
+        case blueLeader
+        case blue
+        case end
     }
 }
 

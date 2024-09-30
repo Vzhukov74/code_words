@@ -1,6 +1,9 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "" : {
+
+    },
     "Appearance" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -61,6 +64,9 @@
           }
         }
       }
+    },
+    "done" : {
+
     },
     "Hello %@!" : {
       "extractionState" : "stale",
@@ -149,6 +155,9 @@
         }
       }
     },
+    "join" : {
+
+    },
     "Light" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -177,6 +186,9 @@
           }
         }
       }
+    },
+    "menu" : {
+
     },
     "Name" : {
       "extractionState" : "stale",
