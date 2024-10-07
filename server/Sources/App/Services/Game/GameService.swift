@@ -370,11 +370,13 @@ struct GameActionResolver {
             if state.readTeamLeader?.id == userId {
                 state.phase = .red
                 state.redLeaderWords.append(Game.LeaderWord(word: word, number: number))
+                return state
             }
         case .blueLeader:
             if state.blueTeamLeader?.id == userId {
                 state.phase = .blue
                 state.blueLeaderWords.append(Game.LeaderWord(word: word, number: number))
+                return state
             }
         default:
             return nil

@@ -13,6 +13,7 @@ final class RoomViewModel: ObservableObject {
     @Published var state: State?
     @Published var hasWordInput: Bool = false
     @Published var leaderText: String = ""
+    @Published var leaderNumber: Int?
     
     private let network: Network
     private let cmdService: CmdService
@@ -71,6 +72,10 @@ final class RoomViewModel: ObservableObject {
 
     func onSelect(_ word: Word) {
         cmdService.selectWord(wordId: word.word)
+    }
+    
+    func onSelectNumber(_ number: Int) {
+        leaderNumber = number
     }
     
     func onEndOfTurn() {

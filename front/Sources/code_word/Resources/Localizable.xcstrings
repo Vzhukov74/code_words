@@ -4,6 +4,9 @@
     "" : {
 
     },
+    "%lld" : {
+
+    },
     "Appearance" : {
       "extractionState" : "stale",
       "localizations" : {

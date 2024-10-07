@@ -52,8 +52,16 @@ public struct RoomView: View {
                 onJoinBlue: vm.onJoinBlue
             )
             if vm.hasWordInput {
-                TextField("", text: $vm.leaderText)
                 HStack {
+                    VStack(spacing: 8) {
+                        TextField("", text: $vm.leaderText)
+                        HStack(spacing: 8) {
+                            ForEach(1...9, id: \.self) { number in
+                                Text("\(number)")
+                                    .onTapGesture { vm.onSelectNumber(number) }
+                            }
+                        }
+                    }
                     Button(action: { vm.onHint() }) {
                         Text("done")
                     }
