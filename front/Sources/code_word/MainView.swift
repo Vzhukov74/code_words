@@ -61,7 +61,7 @@ struct MainView: View {
         VStack {
             Text(userNameCache)
             Spacer()
-            AvatarView(vm: PlayerAvatars.avt2.model())
+            AvatarView(vm: PlayerAvatars.avt5.model())
             Spacer()
         }
     }
@@ -182,51 +182,47 @@ enum PlayerAvatars: CaseIterable {
             ]
         case .avt2:
             return [
-                [false, false, false, false, false, false, false, false, false, false, false],
-                [false, true, false, false, false, false, false, true, false, false, false],
-                [false, false, true, false, false, false, true, false, false, false, false],
-                [false, false, false, true, true, true, false, false, false, false, false],
-                [false, true, true, true, true, true, true, true, false, false, false],
-                [true, true, false, false, true, true, false, false, true, true, false],
-                [true, true, true, true, true, true, true, true, true, true, false],
-                [false, true, false, true, false, true, false, true, false, true, false],
-                [true, false, true, false, true, false, true, false, true, false, false],
+                [false, false, false, false, false, false, false, false, false],
+                [false, true, false, false, false, false, false, true, false],
+                [false, false, true, false, false, false, true, false, false],
+                [false, false, false, true, true, true, false, false, false],
+                [false, true, true, true, true, true, true, true, false],
+                [true, true, false, false, true, false, false, true, true],
+                [true, true, true, true, true, true, true, true, true],
+                [false, true, false, true, false, true, false, true, false],
+                [true, false, true, false, false, false, true, false, true],
             ]
         case .avt3:
             return [
-                [false, false, false, false, false, false, false, false, false, false, false],
-                [false, false, false, false, false, false, false, false, false, false, false],
-                [false, false, false, false, false, false, false, false, false, false, false],
-                [false, false, false, false, false, false, false, false, false, false, false],
-                [false, false, false, false, false, false, false, false, false, false, false],
-                [false, false, false, false, false, false, false, false, false, false, false],
-                [false, false, false, false, false, false, false, false, false, false, false],
-                [false, false, false, false, false, false, false, false, false, false, false],
-                [false, false, false, false, false, false, false, false, false, false, false],
+                [false, false, true, false, false, false, true, false, false],
+                [false, false, true, true, true, true, true, false, false],
+                [false, true, true, false, true, false, true, true, false],
+                [true, true, true, true, true, true, true, true, true],
+                [true, false, true, true, true, true, true, false, true],
+                [true, false, true, true, true, true, true, false, true],
+                [false, false, false, true, false, true, false, false, false],
+                [false, false, true, true, false, true, true, false, false],
             ]
         case .avt4:
             return [
-                [false, false, false, false, false, false, false, false, false, false, false],
-                [false, false, false, false, false, false, false, false, false, false, false],
-                [false, false, false, false, false, false, false, false, false, false, false],
-                [false, false, false, false, false, false, false, false, false, false, false],
-                [false, false, false, false, false, false, false, false, false, false, false],
-                [false, false, false, false, false, false, false, false, false, false, false],
-                [false, false, false, false, false, false, false, false, false, false, false],
-                [false, false, false, false, false, false, false, false, false, false, false],
-                [false, false, false, false, false, false, false, false, false, false, false],
+                [false, false, true, false, false, false, true, false, false],
+                [false, false, false, true, false, true, false, false, false],
+                [true, false, true, true, true, true, true, false, true],
+                [true, true, true, false, true, false, true, true, true],
+                [false, true, true, true, true, true, true, true, false],
+                [false, true, false, true, false, true, false, true, false],
+                [true, true, false, false, false, false, false, true, true],
             ]
         case .avt5:
             return [
-                [false, false, false, false, false, false, false, false, false, false, false],
-                [false, false, false, false, false, false, false, false, false, false, false],
-                [false, false, false, false, false, false, false, false, false, false, false],
-                [false, false, false, false, false, false, false, false, false, false, false],
-                [false, false, false, false, false, false, false, false, false, false, false],
-                [false, false, false, false, false, false, false, false, false, false, false],
-                [false, false, false, false, false, false, false, false, false, false, false],
-                [false, false, false, false, false, false, false, false, false, false, false],
-                [false, false, false, false, false, false, false, false, false, false, false],
+                [false, true, false, false, false, false, true, false],
+                [false, false, true, false, false, true, false, false],
+                [false, false, false, true, true, false, false, false],
+                [true, false, true, true, true, true, false, true],
+                [true, true, true, true, true, true, true, true],
+                [false, true, false, true, true, false, true, false],
+                [false, false, true, true, true, true, false, false],
+                [false, true, true, false, false, true, true, false],
             ]
         case .avt6:
             return [
