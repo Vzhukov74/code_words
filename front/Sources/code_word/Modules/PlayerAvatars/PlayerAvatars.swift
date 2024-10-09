@@ -5,6 +5,8 @@
 //  Created by Владислав Жуков on 08.10.2024.
 //
 
+import SwiftUI
+
 enum PlayerAvatars: CaseIterable {
     case avt1
     case avt2
@@ -49,6 +51,51 @@ enum PlayerAvatars: CaseIterable {
         }
         
         return result
+    }
+    
+    func image() -> Image {
+        switch self {
+        case .avt1:
+            return Image("0", bundle: .module)
+        case .avt2:
+            return Image("1", bundle: .module)
+        case .avt3:
+            return Image("2", bundle: .module)
+        case .avt4:
+            return Image("3", bundle: .module)
+        case .avt5:
+            return Image("4", bundle: .module)
+        case .avt6:
+            return Image("5", bundle: .module)
+        case .avt7:
+            return Image("6", bundle: .module)
+        case .avt8:
+            return Image("7", bundle: .module)
+        case .avt9:
+            return Image("8", bundle: .module)
+        case .avt10:
+            return Image("9", bundle: .module)
+        case .avt11:
+            return Image("10", bundle: .module)
+        case .avt12:
+            return Image("11", bundle: .module)
+        case .avt13:
+            return Image("12", bundle: .module)
+        case .avt14:
+            return Image("13", bundle: .module)
+        case .avt15:
+            return Image("14", bundle: .module)
+        case .avt16:
+            return Image("15", bundle: .module)
+        case .avt17:
+            return Image("16", bundle: .module)
+        case .avt18:
+            return Image("17", bundle: .module)
+        case .avt19:
+            return Image("18", bundle: .module)
+        case .avt20:
+            return Image("19", bundle: .module)
+        }
     }
     
     private func matrix() -> [[Bool]] {

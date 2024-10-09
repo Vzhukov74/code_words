@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct AvatarViewModel {
-    let type: PlayerAvatars
+    var type: PlayerAvatars
     var color: Color
     var cells: [[AvatarCellViewModel]]
 }
@@ -22,8 +22,9 @@ struct AvatarView: View {
     
     let vm: AvatarViewModel
     
-    let space: CGFloat = 4
+    let space: CGFloat
     let size: CGFloat
+    let radius: CGFloat
     
     var body: some View {
         VStack(spacing: space) {
@@ -38,7 +39,7 @@ struct AvatarView: View {
     }
     
     private func cellView(cellVM: AvatarCellViewModel) -> some View {
-        RoundedRectangle(cornerRadius: 4)
+        RoundedRectangle(cornerRadius: radius)
             .foregroundStyle(cellVM.hasColor ? vm.color : Color.clear)
             .frame(width: size, height: size)
     }

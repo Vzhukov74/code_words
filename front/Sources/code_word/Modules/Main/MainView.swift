@@ -24,7 +24,7 @@ struct MainView: View {
             Spacer()
             Button(action: vm.configureUser) {
                 VStack {
-                    AvatarView(vm: PlayerAvatars.avt16.model(), size: 25)
+                    AvatarView(vm: PlayerAvatars.avt16.model(), space: 4, size: 25, radius: 4)
                     Text(userNameCache)
                         .font(Font.title)
                         .foregroundStyle(AppColor.red)

@@ -7,14 +7,30 @@
 
 import SwiftUI
 
-struct UserConfiuratorView: View {
-    let navigation: Navigation
+final class UserConfiuratorViewModel: ObservableObject {
     
-    let avatarVM: AvatarViewModel = AvatarViewModel(
+    @Published var avatarVM: AvatarViewModel = AvatarViewModel(
         type: PlayerAvatars.avt1,
         color: AppColor.blue,
         cells: PlayerAvatars.avt1.viewModel()
     )
+    @Published var selectedAvatarIndex: Int = 1
+    
+    let avatars: [AvatarViewModel] = PlayerAvatars.allCases.compactMap { playerAvatar in
+        AvatarViewModel(type: playerAvatar, color: AppColor.blue, cells: playerAvatar.viewModel())
+    }
+    
+    func onSelectAvatar(index: Int) {
+        avatarVM.type = avatars[index].type
+        avatarVM.cells = avatars[index].cells
+    }
+}
+
+struct UserConfiuratorView: View {
+    let navigation: Navigation
+    
+    @StateObject var vm: UserConfiuratorViewModel = UserConfiuratorViewModel()
+    
     @AppStorage("app.vz.code.word.user.name.key") var userNameCache: String = ""
     @AppStorage("app.vz.code.word.user.icon.key") var userIconCache: Int = 0
     @AppStorage("app.vz.code.word.user.id.key") var userIdCache: String = UUID().uuidString.lowercased().replacingOccurrences(of: "-", with: "")
@@ -73,24 +89,61 @@ struct UserConfiuratorView: View {
     }
     
     private var avatarView: some View {
-        HStack(spacing: 16) {
-            AvatarView(vm: avatarVM, size: 16)
-            ScrollView {
-                LazyVStack(spacing: 16) {
-                    ForEach(0..<PlayerAvatars.allCases.count, id: \.self) { index in
-                        Button(action: {}) {
-                            AvatarView(vm: AvatarViewModel(type:  PlayerAvatars.allCases[index], color: AppColor.red, cells:  PlayerAvatars.allCases[index].viewModel()), size: 4)
+        VStack(spacing: 16) {
+            AvatarView(vm: vm.avatarVM, space: 4, size: 16, radius: 4)
+            ScrollView(.horizontal) {
+                LazyHStack(spacing: 16) {
+                    ForEach(0..<vm.avatars.count, id: \.self) { index in
+                        Button(action: { safe(index: index) }) {
+                            avatarCell(avatarVM: vm.avatars[index])
                         }
                     }
                 }
+                .padding(.horizontal, 16)
             }
+            .frame(height: 64)
         }
     }
     
-    private func readyHandler() {
+    @ViewBuilder
+    func avatarCell(avatarVM: AvatarViewModel) -> some View {
+        #if SKIP
+        avatarVM.type.image()
+            .resizable()
+            .aspectRatio(contentMode: .fit)
+            .foregroundStyle(Color.red)
+            .frame(width: 64, height: 64)
+        #else
+        AvatarView(vm: avatarVM, space: 1, size: 6, radius: 2)
+        #endif
+    }
+    
+    func readyHandler() {
         let user = User(id: userIdCache, name: userNameCache)
         DI.shared.user = user
         
         navigation.userDidConfigure()
     }
+    
+    func safe(index: Int) {
+        #if !SKIP
+        let renderer = ImageRenderer(content: AvatarView(vm: vm.avatars[index], space: 1, size: 6, radius: 2))
+
+        if let uiImage = renderer.uiImage {
+            if let data = uiImage.pngData() {
+                    let filename = getDocumentsDirectory().appendingPathComponent("\(index).png")
+                    try? data.write(to: filename)
+                }
+        }
+        
+        
+        #endif
+    }
 }
+
+#if !SKIP
+func getDocumentsDirectory() -> URL {
+    let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
+    return paths[0]
+}
+#endif
