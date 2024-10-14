@@ -12,8 +12,8 @@ final class RoomViewModel: ObservableObject {
     @Published var isLoading: Bool = false
     @Published var state: State?
     @Published var hasWordInput: Bool = false
-    @Published var leaderText: String = ""
-    @Published var leaderNumber: Int?
+    
+    let leaderHitnInputVM: LeaderHitnInputViewModel
     
     private let network: Network
     private let cmdService: CmdService
@@ -25,27 +25,14 @@ final class RoomViewModel: ObservableObject {
         self.cmdService = cmdService
         self.roomId = roomId
         self.user = user
+        self.leaderHitnInputVM = LeaderHitnInputViewModel(cmdService: cmdService)
     }
 
     func start() {
-        isLoading = true
         Task { @MainActor in
+            isLoading = true
             state = try? await network.game(by: roomId)
-            cmdService.start(gameId: roomId, userId: user.id) { [weak self] newState in
-                Task { @MainActor in
-                    guard let self else { return }
-                    if newState.phase == .redLeader || newState.phase == .blueLeader {
-                        if newState.readTeamLeader?.id == self.user.id || newState.blueTeamLeader?.id == self.user.id {
-                            self.hasWordInput = true
-                        }
-                    } else {
-                        self.hasWordInput = false
-                        self.leaderText = ""
-                    }
-                    
-                    self.state = newState
-                }
-            }
+            subscribeOnRoomEvents()
             isLoading = false
         }
     }
@@ -73,16 +60,25 @@ final class RoomViewModel: ObservableObject {
     func onSelect(_ word: Word) {
         cmdService.selectWord(wordId: word.word)
     }
-    
-    func onSelectNumber(_ number: Int) {
-        leaderNumber = number
-    }
-    
+        
     func onEndOfTurn() {
 
     }
-    
-    func onHint() {
-        cmdService.writeDownWord(word: leaderText)
+        
+    private func subscribeOnRoomEvents() {
+        cmdService.start(gameId: roomId, userId: user.id) { [weak self] newState in
+            Task { @MainActor in
+                guard let self else { return }
+                if newState.phase == .redLeader || newState.phase == .blueLeader {
+                    if newState.readTeamLeader?.id == self.user.id || newState.blueTeamLeader?.id == self.user.id {
+                        self.hasWordInput = true
+                    }
+                } else {
+                    self.leaderHitnInputVM.clear()
+                }
+                
+                self.state = newState
+            }
+        }
     }
 }

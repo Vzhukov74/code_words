@@ -122,7 +122,7 @@ struct UserConfiuratorView: View {
         let user = User(id: userIdCache, name: userNameCache)
         DI.shared.user = user
         
-        navigation.userDidConfigure()
+        navigation.back()
     }
     
     func safe(index: Int) {

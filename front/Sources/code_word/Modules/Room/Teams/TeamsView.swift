@@ -64,8 +64,9 @@ private struct TeamView: View {
                 PlayerView(player: player)
             }
             Divider()
-            Text("join")
-                .onTapGesture { onJoin() }
+            Button(action: onJoin) {
+                Text("join")
+            }
         }
     }
     
@@ -74,8 +75,9 @@ private struct TeamView: View {
         if leader != nil {
             PlayerView(player: leader!)
         } else {
-            Text("became a team master")
-                .onTapGesture { onBecameLeader() }
+            Button(action: onBecameLeader) {
+                Text("became a team master")
+            }
         }
     }
 }
