@@ -8,11 +8,18 @@
 import SwiftUI
 
 public struct RoomView: View {
-    @StateObject var vm = RoomViewModel(network: DI.shared.network, cmdService: CmdService(socketService: DI.shared.socketService), roomId: DI.shared.roomId!, user: DI.shared.user!)
+    @StateObject var vm: RoomViewModel
+    
+    // MARK: State
+    
+    @State var isLoading: Bool = false
+    @State var state: GState?
+    
+    // MARK: UI
     
     public var body: some View {
         Group {
-            if vm.isLoading {
+            if isLoading {
                 VStack(alignment: HorizontalAlignment.center, spacing: CGFloat(16)) {
                     ProgressView()
                     Text("Подключаемся...")
@@ -20,14 +27,14 @@ public struct RoomView: View {
                 }
                     .frame(maxHeight: CGFloat.infinity)
             } else {
-                if let state = vm.state {
+                if let state = state {
                     gameView(state)
                 } else {
                     Text("Ошибка...")
                         .frame(maxWidth: CGFloat.infinity, alignment: Alignment.center)
                 }
             }
-        }.onAppear { vm.start() }
+        }.onAppear { prepare() }
     }
     
     private var headerView: some View {
@@ -41,7 +48,7 @@ public struct RoomView: View {
             .padding(.horizontal, 8)
     }
     
-    private func gameView(_ state: State) -> some View {
+    private func gameView(_ state: GState) -> some View {
         VStack(spacing: 0) {
             headerView
             TeamsView(
@@ -59,6 +66,17 @@ public struct RoomView: View {
         }
             .padding(.horizontal, 8)
     }
+    
+    // MARK: Functions
+    
+    func prepare() {
+        Task { @MainActor in
+            isLoading = true
+            self.state = try! await vm.start()
+            isLoading = false
+        }
+    }
+    
 }
 
 final class CmdService {
@@ -106,13 +124,13 @@ final class CmdService {
     
     private let socketService: SocketService
     private var userId: String!
-    private var onCmd: ((State) -> Void)!
+    private var onCmd: ((GState) -> Void)!
     
     init(socketService: SocketService) {
         self.socketService = socketService
     }
     
-    func start(gameId: String, userId: String, onCmd: @escaping (State) -> Void) {
+    func start(gameId: String, userId: String, onCmd: @escaping (GState) -> Void) {
         self.userId = userId
         self.onCmd = onCmd
         socketService.connect(to: gameId, userId: userId, onReceive: onReceive)
@@ -143,7 +161,7 @@ final class CmdService {
     }
     
     private func onReceive(_ data: Data) {
-        guard let newState = try? JSONDecoder().decode(State.self, from: data) else { return }
+        guard let newState = try? JSONDecoder().decode(GState.self, from: data) else { return }
         onCmd(newState)
     }
 }

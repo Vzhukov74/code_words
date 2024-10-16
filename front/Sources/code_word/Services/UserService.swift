@@ -10,6 +10,7 @@ import SwiftUI
 struct User: Codable {
     let id: String
     let name: String
+    let icon: Int? = nil
 }
 
 protocol IUserService {

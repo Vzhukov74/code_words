@@ -9,7 +9,6 @@ import SwiftUI
 
 final class Navigation: ObservableObject {
     enum Destination {
-        case createNewRoom
         case joinToRoom
         case userConfiguration
     }
@@ -28,15 +27,7 @@ final class Navigation: ObservableObject {
     func onUserConfiguration() {
         path.append(.userConfiguration)
     }
-    
-    func userDidConfigure() {
-        createNewRoom()
-    }
-    
-    func createNewRoom() {
-        path.append(.createNewRoom)
-    }
-    
+            
     func joinToRoom() {
         path.append(.joinToRoom)
     }

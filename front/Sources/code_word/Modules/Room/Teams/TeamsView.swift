@@ -9,7 +9,7 @@ import SwiftUI
 
 struct TeamsView: View {
     
-    let state: State
+    let state: GState
     
     let onBecameRedLeader: () -> Void
     let onJoinRed: () -> Void

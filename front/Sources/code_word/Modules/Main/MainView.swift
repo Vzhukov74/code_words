@@ -4,11 +4,14 @@ import Combine
 struct MainView: View {
     
     @StateObject var vm: MainViewModel
-
+    
     // Android can work with AppStorage only in view context (yeap, android it is shit)
-    @AppStorage("app.vz.code.word.user.name.key") var userNameCache: String = ""
-    @AppStorage("app.vz.code.word.user.icon.key") var userIconCache: Int = 0
-    @AppStorage("app.vz.code.word.user.id.key") var userIdCache: String = UUID().uuidString.lowercased().replacingOccurrences(of: "-", with: "")
+    @AppStorage("app.vz.code.word.user.name.key") private var userNameCache: String = ""
+    @AppStorage("app.vz.code.word.user.icon.key") private var userIconCache: Int = 0
+    @AppStorage("app.vz.code.word.user.id.key") private var userIdCache: String = UUID().uuidString.lowercased().replacingOccurrences(of: "-", with: "")
+    
+    @State var isLoading: Bool = false
+    @State var error: String = ""
     
     var body: some View {
         VStack {
@@ -17,6 +20,7 @@ struct MainView: View {
             btnsView
                 .padding(.bottom, 36)
         }
+        .onAppear { userModel() }
     }
     
     private var headerView: some View {
@@ -38,17 +42,62 @@ struct MainView: View {
     
     private var btnsView: some View {
         VStack(spacing: 20) {
+            if !error.isEmpty {
+                Text(error)
+                    .frame(maxWidth: .infinity, alignment: .center)
+            }
+            
             AppMainButton(
                 title: "Создать игру",
-                action: {vm.createRoom(userName: userNameCache, userId: userIdCache, userIcon: userIconCache)},
+                action: { createRoom() },
                 color: AppColor.main
             )
+            .overlay {
+                if isLoading {
+                    RoundedRectangle(cornerRadius: 24)
+                        .fill(Color.black.opacity(0.4))
+                        .overlay {
+                            ProgressView()
+                        }
+                }
+            }
+            
             AppMainButton(
                 title: "Присоедениться",
-                action: {vm.joinToRoom(userName: userNameCache, userId: userIdCache, userIcon: userIconCache)},
+                action: {},
                 color: AppColor.blue
             )
         }
         .padding(.horizontal, 16)
+    }
+    
+    private func createRoom() {
+        Task { @MainActor in
+            isLoading = true
+            do {
+                let roomId = try await vm.createRoom()
+                error = "\(roomId)"
+                try await Task.sleep(nanoseconds: 5_000_000_000)
+                isLoading = false
+                vm.joinToRoom(id: roomId)
+            } catch {
+                isLoading = false
+                print(error.localizedDescription)
+                showError()
+            }
+        }
+    }
+    
+    private func userModel() {
+        let user = User(id: userIdCache, name: userNameCache/*, icon: userIconCache*/)
+        DI.shared.user = user
+    }
+    
+    private func showError() {
+        error = "Не получилось создать новую комнату"
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 5_000_000_000)
+            error = ""
+        }
     }
 }

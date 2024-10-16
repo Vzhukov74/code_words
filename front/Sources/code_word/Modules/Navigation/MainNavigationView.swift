@@ -16,11 +16,8 @@ struct MainNavigationView: View {
             MainView(vm: DI.shared.mainViewModel())
                 .navigationDestination(for: Navigation.Destination.self) { destination in
                     switch destination {
-                    case .createNewRoom:
-                        NewRoomConfiuratorView(vm: DI.shared.newRoomConfiuratorViewModel())
-                            .toolbar(Visibility.hidden, for: ToolbarPlacement.navigationBar)
                     case .joinToRoom:
-                        RoomView()
+                        RoomView(vm: DI.shared.roomViewModel())
                             .toolbar(Visibility.hidden, for: ToolbarPlacement.navigationBar)
                     case .userConfiguration:
                         UserConfiuratorView(navigation: navigation)

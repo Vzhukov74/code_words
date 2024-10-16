@@ -21,7 +21,7 @@ enum Team: String {
     case blue
 }
 
-struct State: Codable {
+struct GState: Codable {
     let id: String
     let hostId: String
     var readTeamLeader: Player?
@@ -113,14 +113,15 @@ final class Network {
         let (data, _) = try await URLSession.shared.data(for: request)
     }
     
-    func game(by id: String) async throws -> State {
-        let path = "api/games/game/\(id)"
+    func game(by id: String) async throws -> GState {
+        let path = "api/games/game"
         
-        let url = baseUrl.appendingPathComponent(path)
-        var request = URLRequest(url: url)
+        var url = baseUrl.appendingPathComponent(path)
+        url = url.appendingPathComponent(id)
+        let request = URLRequest(url: url)
         let (data, _) = try await URLSession.shared.data(for: request)
         
-        return try JSONDecoder().decode(State.self, from: data)
+        return try JSONDecoder().decode(GState.self, from: data)
     }
 }
 

@@ -8,17 +8,15 @@
 import SwiftUI
 
 final class RoomViewModel: ObservableObject {
-    
-    @Published var isLoading: Bool = false
-    @Published var state: State?
-    @Published var hasWordInput: Bool = false
-    
+        
     let leaderHitnInputVM: LeaderHitnInputViewModel
     
     private let network: Network
     private let cmdService: CmdService
     private let roomId: String
     private let user: User
+    
+    private var onNewState: ((GState) -> Void)?
     
     init(network: Network, cmdService: CmdService, roomId: String, user: User) {
         self.network = network
@@ -28,13 +26,13 @@ final class RoomViewModel: ObservableObject {
         self.leaderHitnInputVM = LeaderHitnInputViewModel(cmdService: cmdService)
     }
 
-    func start() {
-        Task { @MainActor in
-            isLoading = true
-            state = try? await network.game(by: roomId)
-            subscribeOnRoomEvents()
-            isLoading = false
-        }
+    func start() async throws -> GState {
+        let state = try await network.game(by: roomId)
+        
+//        self.onNewState = onNewState
+//        subscribeOnRoomEvents()
+        
+        return state
     }
     
     func startGame() {
@@ -69,15 +67,16 @@ final class RoomViewModel: ObservableObject {
         cmdService.start(gameId: roomId, userId: user.id) { [weak self] newState in
             Task { @MainActor in
                 guard let self else { return }
-                if newState.phase == .redLeader || newState.phase == .blueLeader {
-                    if newState.readTeamLeader?.id == self.user.id || newState.blueTeamLeader?.id == self.user.id {
-                        self.hasWordInput = true
-                    }
-                } else {
-                    self.leaderHitnInputVM.clear()
-                }
+                self.onNewState?(newState)
                 
-                self.state = newState
+//                if newState.phase == .redLeader || newState.phase == .blueLeader {
+//                    if newState.readTeamLeader?.id == self.user.id || newState.blueTeamLeader?.id == self.user.id {
+//                        self.hasWordInput = true
+//                    }
+//                } else {
+//                    self.leaderHitnInputVM.clear()
+//                }
+                
             }
         }
     }

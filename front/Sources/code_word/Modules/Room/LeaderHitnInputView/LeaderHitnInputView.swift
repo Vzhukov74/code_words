@@ -27,7 +27,9 @@ struct LeaderHitnInputView: View {
                 }
             }
             Button(action: { vm.onHint() }) {
-                Text("done")
+                Image("enter", bundle: .module)
+                    .resizable()
+                    .frame(width: 56, height: 80)
             }
             .disabled(!vm.isSendActive)
             .frame(width: 56)
