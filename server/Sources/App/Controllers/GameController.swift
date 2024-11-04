@@ -21,7 +21,7 @@ final class GameController {
     
     func create(req: Request) throws -> EventLoopFuture<Response> {
         let host = try req.content.decode(Game.Player.self, as: .json)
-        let id = UUID().uuidString.lowercased().replacingOccurrences(of: "-", with: "")
+        let id = "newgame"//UUID().uuidString.lowercased().replacingOccurrences(of: "-", with: "")
         let state = Game.State(id: id, host: host)
         let game = Game(id: id, host: host, state: state)
         
@@ -46,11 +46,7 @@ final class GameController {
         
         return try req.application.gameService.join(gameId: join.gameId, player: join.player, on: req).eventLoop.future(Response(status: .ok))
     }
-    
-//    func allgames(req: Request) throws -> EventLoopFuture<[Game]> {
-//        return try req.application.gameService.games(on: req)
-//    }
-    
+        
     func players(req: Request) throws -> EventLoopFuture<[Game.Player]> {
         let id = req.parameters.get("id")!
         

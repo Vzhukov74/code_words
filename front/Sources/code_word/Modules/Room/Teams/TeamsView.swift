@@ -42,8 +42,10 @@ struct TeamsView: View {
             .frame(minHeight: 60)
             .background {
                 HStack(spacing: 0) {
-                    Color.red.frame(maxWidth: .infinity)
-                    Color.blue.frame(maxWidth: .infinity)
+                    AppColor.red
+                        .frame(maxWidth: .infinity)
+                    AppColor.blue
+                        .frame(maxWidth: .infinity)
                 }
             }
     }
@@ -75,7 +77,7 @@ private struct TeamView: View {
         if leader != nil {
             PlayerView(player: leader!)
         } else {
-            Button(action: onBecameLeader) {
+            Button(action: { logger.info("123"); onBecameLeader() }) {
                 Text("became a team master")
             }
         }

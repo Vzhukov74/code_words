@@ -25,8 +25,7 @@ final class DI {
     func mainViewModel() -> MainViewModel {
         MainViewModel(
             navigation: navigation,
-            network: network,
-            userService: userService
+            network: network
         )
     }
     

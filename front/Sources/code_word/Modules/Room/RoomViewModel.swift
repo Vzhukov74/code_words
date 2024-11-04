@@ -26,11 +26,11 @@ final class RoomViewModel: ObservableObject {
         self.leaderHitnInputVM = LeaderHitnInputViewModel(cmdService: cmdService)
     }
 
-    func start() async throws -> GState {
+    func start(onNewState: ((GState) -> Void)?) async throws -> GState {
         let state = try await network.game(by: roomId)
         
-//        self.onNewState = onNewState
-//        subscribeOnRoomEvents()
+        self.onNewState = onNewState
+        subscribeOnRoomEvents()
         
         return state
     }

@@ -64,7 +64,7 @@ struct MainView: View {
             
             AppMainButton(
                 title: "Присоедениться",
-                action: {},
+                action: { vm.joinToRoom(id: "newgame") },
                 color: AppColor.blue
             )
         }
@@ -75,11 +75,8 @@ struct MainView: View {
         Task { @MainActor in
             isLoading = true
             do {
-                let roomId = try await vm.createRoom()
-                error = "\(roomId)"
-                try await Task.sleep(nanoseconds: 5_000_000_000)
+                try await vm.createAndJoinRoom(with: DI.shared.user!)
                 isLoading = false
-                vm.joinToRoom(id: roomId)
             } catch {
                 isLoading = false
                 print(error.localizedDescription)

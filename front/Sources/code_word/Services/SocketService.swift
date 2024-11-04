@@ -8,7 +8,11 @@
 import Foundation
 
 final class SocketService {
+    #if !SKIP
     private let baseUrl = URL(string: "http://127.0.0.1:8080/socket/connect")!
+    #else
+    private let baseUrl = URL(string: "http://10.0.2.2:8080/socket/connect")!
+    #endif
     
     private var webSocketTask: URLSessionWebSocketTask?
     private var onReceive: ((Data) -> Void)?
@@ -37,6 +41,7 @@ final class SocketService {
     private func receive() {
         Task {
             let result = try? await webSocketTask?.receive()
+            logger.info("receive_result" )
             if result != nil {
                 switch result {
                 case let .string(msg):

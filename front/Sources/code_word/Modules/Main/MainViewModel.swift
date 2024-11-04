@@ -9,30 +9,21 @@ import SwiftUI
 import Combine
 
 final class MainViewModel: ObservableObject {
-    
-    @Published var user: User?
-    
+        
     private let navigation: Navigation
     private let network: Network
-    private let userService: IUserService
-    private var cancellable = Set<AnyCancellable>()
     
-    init(navigation: Navigation, network: Network, userService: IUserService) {
+    init(navigation: Navigation, network: Network) {
         self.navigation = navigation
-        self.userService = userService
         self.network = network
-        
-        self.user = userService.user
     }
     
-    func createRoom() async throws -> String {
-        guard let user = userService.user else { return "" }
-        
+    func createAndJoinRoom(with user: User) async throws {
         let roomId = try await network.createRoom(with: user)
         DI.shared.roomId = roomId
         DI.shared.user = user
         
-        return roomId
+        joinToRoom(id: roomId)
     }
     
     func joinToRoom(id: String) {
