@@ -13,7 +13,7 @@ struct Result: Codable {
 
 struct Request: Codable {
     let gameId: String
-    let user: User
+    let player: User
 }
 
 enum Team: String {
@@ -101,8 +101,8 @@ final class Network {
     }
     
     /// join to selected game room
-    func joinToRoom(id: String, with user: User) async throws {
-        let body = try JSONEncoder().encode(Request(gameId: id, user: user))
+    func joinToRoom(id: String, with user: User) async throws  -> GState{
+        let body = try JSONEncoder().encode(Request(gameId: id, player: user))
         let path = "api/games/join"
         
         let url = baseUrl.appendingPathComponent(path)
@@ -111,6 +111,8 @@ final class Network {
         request.httpBody = body
         
         let (data, _) = try await URLSession.shared.data(for: request)
+        
+        return try JSONDecoder().decode(GState.self, from: data)
     }
     
     func game(by id: String) async throws -> GState {

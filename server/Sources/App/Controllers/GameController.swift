@@ -41,10 +41,10 @@ final class GameController {
         return try req.application.gameService.games(on: req)
     }
     
-    func join(req: Request) throws -> EventLoopFuture<Response> {
-        let join = try req.content.decode(JoinRequest.self)
+    func join(req: Request) throws -> EventLoopFuture<Game.State> {
+        let join = try req.content.decode(JoinRequest.self, as: .json)
         
-        return try req.application.gameService.join(gameId: join.gameId, player: join.player, on: req).eventLoop.future(Response(status: .ok))
+        return try req.application.gameService.join(gameId: join.gameId, player: join.player, on: req)
     }
         
     func players(req: Request) throws -> EventLoopFuture<[Game.Player]> {

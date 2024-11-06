@@ -20,9 +20,15 @@ final class GameService: IGameService {
         return req.eventLoop.makeSucceededFuture(())
     }
     
-    func join(gameId: String, player: Game.Player, on req: Request) throws -> EventLoopFuture<Void> {
-        self.games[gameId]?.join(player: player)
-        return req.eventLoop.makeSucceededFuture(())
+    func join(gameId: String, player: Game.Player, on req: Request) throws -> EventLoopFuture<Game.State> {
+        if self.games[gameId]?.isPlaying(player: player.id) ?? false {
+            
+        } else {
+            self.games[gameId]?.join(player: player)
+        }
+        
+        let game = games[gameId]!
+        return req.eventLoop.makeSucceededFuture(game.state)
     }
     
     func game(by id: String, on req: Request) throws -> EventLoopFuture<Game.State> {
@@ -49,10 +55,6 @@ final class GameService: IGameService {
             guard let game = self.games[gameId] else { return }
             guard let newState = GameActionResolver(state: game.state, userId: playerId).resolve(cmd: cmd) else { return }
             self.games[gameId]?.new(state: newState)
-            
-            if let newStateData = try? JSONEncoder().encode(newState) {
-                ws.send(newStateData)
-            }
         }
         _ = ws.onClose.always { [unowned self] _ in
             guard let game = self.games[gameId] else { return }

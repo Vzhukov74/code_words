@@ -9,7 +9,7 @@ import Vapor
 
 protocol IGameService: Sendable {
     func add(game: Game, on req: Request) throws -> EventLoopFuture<Void>
-    func join(gameId: String, player: Game.Player, on req: Request) throws -> EventLoopFuture<Void>
+    func join(gameId: String, player: Game.Player, on req: Request) throws -> EventLoopFuture<Game.State>
     func game(by id: String, on req: Request) throws -> EventLoopFuture<Game.State>
     
     func connect(to gameId: String, playerId: String, ws: WebSocket, on req: Request) throws -> EventLoopFuture<Void>

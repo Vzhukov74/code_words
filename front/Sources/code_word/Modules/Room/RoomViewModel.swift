@@ -27,7 +27,7 @@ final class RoomViewModel: ObservableObject {
     }
 
     func start(onNewState: ((GState) -> Void)?) async throws -> GState {
-        let state = try await network.game(by: roomId)
+        let state = try await network.joinToRoom(id: roomId, with: user)
         
         self.onNewState = onNewState
         subscribeOnRoomEvents()

@@ -56,6 +56,11 @@ final class Game: Sendable {
     
     func new(state: State) {
         self.state = state
+        if let stateData = try? JSONEncoder().encode(state) {
+            links.values.forEach { wsc in
+                wsc.webSocket.send(stateData)
+            }
+        }
     }
 }
 
@@ -90,6 +95,7 @@ extension Game {
     struct Player: Content {
         let id: String
         let name: String
+        let icon: Int?
     }
     
     enum WColor: Int, Content {
