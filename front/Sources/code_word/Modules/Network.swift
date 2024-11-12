@@ -23,25 +23,16 @@ enum Team: String {
 
 struct GState: Codable {
     let id: String
-    let hostId: String
     var readTeamLeader: Player?
     var blueTeamLeader: Player?
-    var redTeam: [Player]
+    var redTeam: [Player] = []
     var blueTeam: [Player] = []
-    var grayTeam: [Player] = []
     var phase: Phase = .red
     
     var redLeaderWords: [LeaderWord] = []
     var blueLeaderWords: [LeaderWord] = []
     
     var words: [Word] = []
-    
-    init(id: String, host: Player, words: [Word]) {
-        self.id = id
-        self.redTeam = [host]
-        self.words = words
-        self.hostId = host.id
-    }
 }
 
 struct LeaderWord: Codable {
@@ -101,7 +92,7 @@ final class Network {
     }
     
     /// join to selected game room
-    func joinToRoom(id: String, with user: User) async throws  -> GState{
+    func joinToRoom(id: String, with user: User) async throws -> GState {
         let body = try JSONEncoder().encode(Request(gameId: id, player: user))
         let path = "api/games/join"
         

@@ -8,46 +8,34 @@
 
 import Vapor
 
-final class Game: Sendable {
+actor Game {
     let id: String
-    let host: Player
-    
-    private let lock = Lock()
+    let hostId: String
     
     private var _state: State
-    private var _links: [String: WebSocketContext]
-    
-    private(set) var state: State {
-        get { _state }
-        set {
-            lock.lock()
-            _state = newValue
-            lock.unlock()
-        }
-    }
-    
-    private(set) var links: [String: WebSocketContext] {
-        get { _links }
-        set {
-            lock.lock()
-            _links = newValue
-            lock.unlock()
-        }
-    }
-    
-    init(id: String, host: Player, state: State) {
+    private var links: [String: WebSocketContext]
+        
+    init(id: String, hostId: String, state: State) {
         self.id = id
-        self.host = host
+        self.hostId = hostId
         self._state = state
-        self._links = [:]
+        self.links = [:]
+    }
+    
+    func state() -> State {
+        _state
     }
     
     func join(player: Player) {
-        state.grayTeam.append(player)
+        if _state.redTeam.count > _state.blueTeam.count {
+            _state.blueTeam.append(player)
+        } else {
+            _state.redTeam.append(player)
+        }
     }
     
     func isPlaying(player id: String) -> Bool {
-        state.allPlayers.contains { $0.id == id }
+        _state.allPlayers.contains { $0.id == id }
     }
     
     func setContext(_ context: WebSocketContext, forPlayer id: String) {
@@ -55,7 +43,7 @@ final class Game: Sendable {
     }
     
     func new(state: State) {
-        self.state = state
+        self._state = state
         if let stateData = try? JSONEncoder().encode(state) {
             links.values.forEach { wsc in
                 wsc.webSocket.send(stateData)
@@ -67,12 +55,10 @@ final class Game: Sendable {
 extension Game {
     struct State: Content {
         let id: String
-        let hostId: String
         var readTeamLeader: Player?
         var blueTeamLeader: Player?
-        var redTeam: [Player]
+        var redTeam: [Player] = []
         var blueTeam: [Player] = []
-        var grayTeam: [Player] = []
         var phase: Phase = .idle
         
         var redLeaderWords: [LeaderWord] = []
@@ -80,10 +66,8 @@ extension Game {
         
         var words: [Word] = []
         
-        init(id: String, host: Player) {
+        init(id: String) {
             self.id = id
-            self.redTeam = [host]
-            self.hostId = host.id
         }
     }
     
@@ -126,14 +110,13 @@ extension Game.State {
     var allPlayers: [Game.Player] {
         var players = blueTeam
         players.append(contentsOf: redTeam)
-        players.append(contentsOf: grayTeam)
         if let blueTeamLeader {
             players.append(blueTeamLeader)
         }
         if let readTeamLeader {
             players.append(readTeamLeader)
         }
-        
+
         return players
     }
 }

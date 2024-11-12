@@ -7,63 +7,67 @@
 
 import Vapor
 
-final class GameController {
-    
-    struct NewGameResponse: Content {
-        let id: String
-        let hostId: String
-    }
-    
-    struct JoinRequest: Content {
+final class GameController: RouteCollection {
+        
+    private struct JoinRequest: Content {
         let gameId: String
         let player: Game.Player
     }
     
-    func create(req: Request) throws -> EventLoopFuture<Response> {
-        let host = try req.content.decode(Game.Player.self, as: .json)
-        let id = "newgame"//UUID().uuidString.lowercased().replacingOccurrences(of: "-", with: "")
-        let state = Game.State(id: id, host: host)
-        let game = Game(id: id, host: host, state: state)
-        
-        return try req.application.gameService.add(game: game, on: req).map {
-            let data = try! JSONEncoder().encode(state)
-            return Response(status: .ok, body: .init(data: data))
-        }
+    struct GameCreateResult: Content {
+        let id: String
     }
     
-    func game(req: Request) throws -> EventLoopFuture<Game.State> {
-        let id = req.parameters.get("id")!
-        
-        return try req.application.gameService.game(by: id, on: req)
-    }
-    
-    func games(req: Request) throws -> EventLoopFuture<[String]> {
-        return try req.application.gameService.games(on: req)
-    }
-    
-    func join(req: Request) throws -> EventLoopFuture<Game.State> {
-        let join = try req.content.decode(JoinRequest.self, as: .json)
-        
-        return try req.application.gameService.join(gameId: join.gameId, player: join.player, on: req)
-    }
-        
-    func players(req: Request) throws -> EventLoopFuture<[Game.Player]> {
-        let id = req.parameters.get("id")!
-        
-        return try req.application.gameService.players(gameId: id, on: req)
-    }
-}
-
-extension GameController: RouteCollection {
     func boot(routes: any RoutesBuilder) throws {
         let games = routes.grouped("api", "games")
         
         games.post("create", use: create)
         games.post("join", use: join)
-        
+
         games.get("game", ":id", use: game)
-        games.get("games", use: self.games)
-        games.get("players", ":id", use: players)
+        
+        let socket = routes.grouped("socket")
+        socket.webSocket("connect", ":gameId", ":playerId", onUpgrade: socketHandler)
+    }
+    
+    private func create(req: Request) async throws -> GameCreateResult {
+        let host = try req.content.decode(Game.Player.self, as: .json)
+        let id = "newgame"//UUID().uuidString.lowercased().replacingOccurrences(of: "-", with: "")
+        let state = Game.State(id: id)
+        let game = Game(id: id, hostId: host.id, state: state)
+        
+        try await req.application.gameService.add(game: game)
+        
+        return GameCreateResult(id: id)
+    }
+    
+    private func game(req: Request) async throws -> Game.State {
+        guard let id = req.parameters.get("id") else {
+            throw Abort(.badRequest)
+        }
+        
+        return try await req.application.gameService.game(by: id)
+    }
+        
+    private func join(req: Request) async throws -> Game.State {
+        let join = try req.content.decode(JoinRequest.self, as: .json)
+        
+        return try await req.application.gameService.join(gameId: join.gameId, player: join.player)
+    }
+    
+    private func socketHandler(_ req: Request, _ ws: WebSocket) async {
+       guard let gameId = req.parameters.get("gameId"),
+             let playerId = req.parameters.get("playerId") else {
+           _ = try? await ws.close(code: .protocolError)
+           return
+       }
+       
+       do {
+           _ = try await req.application.gameService.connect(to: gameId, playerId: playerId, ws: ws, on: req)
+       } catch {
+           ws.send(error: .unknownError(error), fromUser: playerId)
+           _ = try? await ws.close(code: .unexpectedServerError)
+       }
     }
 }
 

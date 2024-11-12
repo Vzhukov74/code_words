@@ -12,85 +12,77 @@ struct WebSocketContext {
     let request: Request
 }
 
-final class GameService: IGameService {
+actor GamesStore {
     private var games: [String: Game] = [:]
     
-    func add(game: Game, on req: Request) throws -> EventLoopFuture<Void> {
-        self.games[game.id] = game
-        return req.eventLoop.makeSucceededFuture(())
+    func game(by id: String) -> Game? {
+        games[id]
     }
     
-    func join(gameId: String, player: Game.Player, on req: Request) throws -> EventLoopFuture<Game.State> {
-        if self.games[gameId]?.isPlaying(player: player.id) ?? false {
-            
-        } else {
-            self.games[gameId]?.join(player: player)
+    func add(game: Game, by id: String) {
+        games[id] = game
+    }
+    
+    func remove(by id: String) {
+        games.removeValue(forKey: id)
+    }
+}
+
+final class GameService: IGameService {
+    private let gamesStore = GamesStore()
+    
+    func add(game: Game) async throws {
+        await gamesStore.add(game: game, by: game.id)
+    }
+    
+    func join(gameId: String, player: Game.Player) async throws -> Game.State {
+        guard let game = await gamesStore.game(by: gameId) else {
+            throw Abort(.forbidden, reason: "Cannot connect to a game you are not a part of")
         }
         
-        let game = games[gameId]!
-        return req.eventLoop.makeSucceededFuture(game.state)
+//        guard await game.isPlaying(player: player.id) else {
+//            throw Abort(.forbidden, reason: "Cannot connect to a game you are not a part of")
+//        }
+        
+        await game.join(player: player)
+
+        let state = await game.state()
+        
+        return state
     }
     
-    func game(by id: String, on req: Request) throws -> EventLoopFuture<Game.State> {
-        let game = games[id]!
-        return req.eventLoop.makeSucceededFuture(game.state)
+    func game(by id: String) async throws -> Game.State {
+        guard let game = await gamesStore.game(by: id) else {
+            throw Abort(.forbidden, reason: "Cannot connect to a game you are not a part of")
+        }
+
+        return await game.state()
     }
     
-    func connect(to gameId: String, playerId: String, ws: WebSocket, on req: Request) throws -> EventLoopFuture<Void> {
-        guard let game = self.games[gameId] else {
+    func connect(to gameId: String, playerId: String, ws: WebSocket, on req: Request) async throws -> HTTPStatus {
+        guard let game = await gamesStore.game(by: gameId) else {
             throw Abort(.badRequest, reason: "game don't exist")
         }
         
-        guard game.isPlaying(player: playerId) == true else {
+        guard await game.isPlaying(player: playerId) == true else {
             throw Abort(.forbidden, reason: "Cannot connect to a game you are not a part of")
         }
         
         let wsContext = WebSocketContext(webSocket: ws, request: req)
-        games[gameId]?.setContext(wsContext, forPlayer: playerId)
+        await game.setContext(wsContext, forPlayer: playerId)
 
         ws.pingInterval = .seconds(5)
-        ws.onText { [unowned self] ws, text in
-            
+        ws.onText { ws, text in
             guard let cmd = Cmd(rawValue: text) else { return }
-            guard let game = self.games[gameId] else { return }
-            guard let newState = GameActionResolver(state: game.state, userId: playerId).resolve(cmd: cmd) else { return }
-            self.games[gameId]?.new(state: newState)
+            let state = await game.state()
+            guard let newState = GameActionResolver(state: state, userId: playerId, hostId: game.hostId).resolve(cmd: cmd) else { return }
+            await game.new(state: newState)
         }
-        _ = ws.onClose.always { [unowned self] _ in
-            guard let game = self.games[gameId] else { return }
-            //game.state.userDidDisconnect(userId)
-            
-//            if game.state.host.id == userId {
-//                req.eventLoop.scheduleTask(in: .minutes(5)) {
-//                    ExpiredGameJob(id: matchId)
-//                        .invoke(req.application)
-//                }
-//            }
-        }
-        return req.eventLoop.makeSucceededFuture(())
-    }
-    
-    // MARK: helpers
-    
-    func games(on req: Request) throws -> EventLoopFuture<[String]> {
-        req.eventLoop.next().future(Array(games.values).map { $0.id })
-    }
-    
-    func players(gameId: String, on req: Request) throws -> EventLoopFuture<[Game.Player]> {
-        if let game = self.games[gameId] {
-            var players = game.state.allPlayers
-            return req.eventLoop.next().future(players)
-        } else {
-            return req.eventLoop.next().future([])
-        }
+        _ = ws.onClose.always { _ in }
+
+        return .ok
     }
 }
-
-//protocol GCmd {
-//    let cmd: String
-//    
-//
-//}
 
 enum Cmd {
     case start
@@ -154,6 +146,7 @@ struct GameActionResolver {
     
     let state: Game.State
     let userId: String
+    let hostId: String
     
     func resolve(cmd: Cmd) -> Game.State? {
         var state: Game.State?
@@ -177,7 +170,7 @@ struct GameActionResolver {
     }
     
     func start() -> Game.State? {
-        guard state.hostId == userId else { return nil }
+        guard hostId == userId else { return nil }
         guard state.phase == .idle else { return nil }
         
         var state = state
@@ -208,19 +201,7 @@ struct GameActionResolver {
                 return state
             }
         }
-        
-        if let playerIndex = state.grayTeam.firstIndex(where: { $0.id == userId }) {
-            let player = state.grayTeam.remove(at: playerIndex)
-            switch team {
-            case .red:
-                state.redTeam.append(player)
-                return state
-            case .blue:
-                state.blueTeam.append(player)
-                return state
-            }
-        }
-        
+                
         if state.readTeamLeader?.id == userId {
             if let player = state.readTeamLeader {
                 state.readTeamLeader = nil
@@ -275,18 +256,6 @@ struct GameActionResolver {
         
         if let playerIndex = state.redTeam.firstIndex(where: { $0.id == userId }) {
             let player = state.redTeam.remove(at: playerIndex)
-            switch team {
-            case .red:
-                state.readTeamLeader = player
-            case .blue:
-                state.blueTeamLeader = player
-            }
-            return state
-        }
-
-        
-        if let playerIndex = state.grayTeam.firstIndex(where: { $0.id == userId }) {
-            let player = state.grayTeam.remove(at: playerIndex)
             switch team {
             case .red:
                 state.readTeamLeader = player

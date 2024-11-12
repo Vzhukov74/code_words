@@ -80,69 +80,7 @@ public struct RoomView: View {
         }
     }
     
-//    private func startGame() {
-//        //send(msg: Cmd.start.cmd)
-//    }
-//    
-//    private func joun(team: Team) {
-//        send(msg: CmdService.Cmd.joinTeam(vm.user.id, team.rawValue).cmd)
-//    }
-//    
-////    func becameTeamLeader(team: Team) {
-////        send(msg: Cmd.becameTeamLeader(userId, team.rawValue).cmd)
-////    }
-////    
-////    func selectWord(wordId: String) {
-////        send(msg: Cmd.selectWord(userId, wordId).cmd)
-////    }
-////    
-////    func writeDownWord(word: String, number: Int) {
-////        send(msg: Cmd.writeDownWord(word, "\(number)").cmd)
-////    }
-//    
-//    private func onReceive(_ msg: String) {
-//
-//    }
-//    
-//    private func onReceive(_ data: Data) {
-//        logger.info("onReceivenewState")
-//        guard let newState = try? JSONDecoder().decode(GState.self, from: data) else { return }
-//        //onCmd(newState)
-//    }
-//    
-//#if !SKIP
-//private let baseUrl = URL(string: "http://127.0.0.1:8080/socket/connect")!
-//#else
-//private let baseUrl = URL(string: "http://10.0.2.2:8080/socket/connect")!
-//#endif
-//    
-//    //private let baseUrl = URL(string: "http://127.0.0.1:8080/socket/connect")!
-//    private var webSocketTask: URLSessionWebSocketTask?
-//    
-//    mutating func connect(to gameId: String, userId: String) {
-//        let url = baseUrl.appendingPathComponent("\(gameId)/\(userId)")
-//        let request = URLRequest(url: url)
-//        
-//        webSocketTask = URLSession.shared.webSocketTask(with: request)
-//        //self.onReceive = onReceive
-//        webSocketTask!.resume()
-//        receive()
-//    }
-//    
-//    func disconnect() {
-//        webSocketTask?.cancel()
-//    }
-//    
-//    func send(msg: String) {
-//        Task {
-//            logger.info("webSocketTask")
-//            //logger.info("\(webSocketTask!.state)")
-//            logger.info("\(webSocketTask!.error)")
-//            
-//            try await webSocketTask!.send(URLSessionWebSocketTask.Message.string(msg))
-//        }
-//    }
-//    
+
 //    private func receive() {
 //        Task {
 //            let result = try? await webSocketTask?.receive()

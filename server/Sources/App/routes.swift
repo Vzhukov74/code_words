@@ -10,29 +10,6 @@ func routes(_ app: Application) throws {
     }
     
     try app.register(collection: GameController())
-    socketRoutes(app)
-}
-
-func socketRoutes(_ app: Application) {
-    let socket = app.grouped("socket")
-
-    socket.webSocket("connect", ":gameId", ":playerId") { req, ws in
-        app.logger.debug("Handling request to play")
-        
-        guard let gameId = req.parameters.get("gameId"),
-              let playerId = req.parameters.get("playerId") else {
-            _ = ws.close(code: .protocolError)
-            return
-        }
-        
-        do {
-            _ = try app.gameService.connect(to: gameId, playerId: playerId, ws: ws, on: req)
-        } catch {
-            ws.send(error: .unknownError(error), fromUser: playerId)
-            _ = ws.close(code: .unexpectedServerError)
-            app.logger.error("Error joining match: \(error)")
-        }
-    }
 }
 
 extension WebSocket {
