@@ -8,6 +8,11 @@
 
 import Vapor
 
+struct WebSocketContext {
+    let webSocket: WebSocket
+    let request: Request
+}
+
 actor Game {
     let id: String
     let hostId: String
