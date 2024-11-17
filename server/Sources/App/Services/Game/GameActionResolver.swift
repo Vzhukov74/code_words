@@ -15,8 +15,8 @@ struct GameActionResolver {
         var state: Game.State?
         
         switch cmd {
-        case .start:
-            state = start()
+        case let .start(user, dictionary):
+            state = start(dictionary: dictionary)
         case let .joinTeam(user, teamStr):
             guard let team = Team(rawValue: teamStr) else { return nil }
             state = joun(team: team, userId: user)
@@ -27,18 +27,20 @@ struct GameActionResolver {
             state = selectWord(wordId: wordId, userId: user)
         case let .writeDownWord(word, number):
             state = writeDownWord(word: word, number: number)
+        case let .restart(user, _):
+            state = restart()
         }
         
         return state
     }
     
-    func start() -> Game.State? {
+    func start(dictionary: String) -> Game.State? {
         guard hostId == userId else { return nil }
         guard state.phase == .idle else { return nil }
         
         var state = state
         
-        let words = Words.prepareWords()
+        let words = WordsProvider(dictionary: .common).words()
         let redWords = words.filter({ $0.color == .red }).count
         
         state.words = words
@@ -48,8 +50,10 @@ struct GameActionResolver {
     }
     
     func joun(team: Team, userId: String) -> Game.State? {
-        var state = state
+        guard state.phase == .idle else { return nil }
 
+        var state = state
+        
         switch team {
         case .red:
             if let playerIndex = state.blueTeam.firstIndex(where: { $0.id == userId }) {
@@ -97,6 +101,8 @@ struct GameActionResolver {
     }
     
     func becameTeamLeader(team: Team, userId: String) -> Game.State? {
+        guard state.phase == .idle else { return nil }
+        
         var state = state
         
         switch team {
@@ -189,7 +195,39 @@ struct GameActionResolver {
             if state.words[wordIndex].elections.count == team.count {
                 state.words[wordIndex].elections = []
                 state.words[wordIndex].isOpen = true
-                state.phase = .blue
+                
+                if state.words[wordIndex].color == .gray {
+                    state.phase = state.phase == .red ? .blueLeader : .redLeader
+                } else if state.words[wordIndex].color == .black {
+                    state.phase = .end
+                } else if state.words[wordIndex].color == .red, state.phase == .red {
+                    switch state.phase {
+                    case .red:
+                        state.redLeaderWords[state.redLeaderWords.count - 1].numberOfOpenWords += 1
+                        if state.redLeaderWords[state.redLeaderWords.count - 1].numberOfOpenWords == state.redLeaderWords[state.redLeaderWords.count - 1].number {
+                            state.phase = state.phase == .red ? .blueLeader : .redLeader
+                        }
+                    case .blue:
+                        state.blueLeaderWords[state.blueLeaderWords.count - 1].numberOfOpenWords += 1
+                        if state.blueLeaderWords[state.blueLeaderWords.count - 1].numberOfOpenWords == state.blueLeaderWords[state.blueLeaderWords.count - 1].number {
+                            state.phase = state.phase == .red ? .blueLeader : .redLeader
+                        }
+                    default:
+                        return nil
+                    }
+                    
+                } else if state.words[wordIndex].color == .blue, state.phase == .blue {
+                    switch state.phase {
+                    case .red:
+                        team = state.redTeam
+                    case .blue:
+                        team = state.blueTeam
+                    default:
+                        return nil
+                    }
+                } else {
+                    state.phase = state.phase == .red ? .blueLeader : .redLeader
+                }
             }
         }
         
@@ -203,13 +241,13 @@ struct GameActionResolver {
         case .redLeader:
             if state.readTeamLeader?.id == userId {
                 state.phase = .red
-                state.redLeaderWords.append(Game.LeaderWord(word: word, number: number))
+                state.redLeaderWords.append(Game.LeaderWord(word: word, number: Int(number)!, numberOfOpenWords: 0))
                 return state
             }
         case .blueLeader:
             if state.blueTeamLeader?.id == userId {
                 state.phase = .blue
-                state.blueLeaderWords.append(Game.LeaderWord(word: word, number: number))
+                state.blueLeaderWords.append(Game.LeaderWord(word: word, number: Int(number)!, numberOfOpenWords: 0))
                 return state
             }
         default:
@@ -217,5 +255,15 @@ struct GameActionResolver {
         }
         
         return nil
+    }
+    
+    func restart() -> Game.State {
+        var state = state
+        state.words = []
+        state.phase = .idle
+        state.blueLeaderWords = []
+        state.redLeaderWords = []
+        
+        return state
     }
 }

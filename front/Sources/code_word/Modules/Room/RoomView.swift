@@ -80,40 +80,25 @@ public struct RoomView: View {
         }
     }
     
-
-//    private func receive() {
-//        Task {
-//            let result = try? await webSocketTask?.receive()
-//            logger.info("result 22" )
-//            if result != nil {
-//                switch result {
-//                case let .string(msg):
-//                    print(msg)
-//                case let .data(data):
-//                    self.onReceive(data)
-//                default: break
-//                }
-//            }
-//            receive()
-//        }
-//    }
 }
 
 final class CmdService {
     enum Cmd {
-        case start
+        case start(String, String)
         case joinTeam(String, String)
         case becameTeamLeader(String, String)
         case selectWord(String, String)
         case writeDownWord(String, String)
+        case restart(String, String)
         
         var cmd: String {
             switch self {
-            case .start: return "start:temp:temp"
+            case let .start(user, dictionary): return "start:\(user):\(dictionary)"
             case let .joinTeam(user, team): return "joinTeam:\(user):\(team)"
             case let .becameTeamLeader(user, team): return "becameTeamLeader:\(user):\(team)"
             case let .selectWord(user, wordId): return "selectWord:\(user):\(wordId)"
             case let .writeDownWord(user, word): return "writeDownWord:\(user):\(word)"
+            case let .restart(user, _): return "restart:\(user):temp"
             }
         }
         
@@ -127,7 +112,7 @@ final class CmdService {
             
             switch cmdStr {
             case "start":
-                self = .start
+                self = .start(String(userId), String(data))
             case "joinTeam":
                 self = .joinTeam(String(userId), String(data))
             case "becameTeamLeader":
@@ -136,6 +121,8 @@ final class CmdService {
                 self = .selectWord(String(userId), String(data))
             case "writeDownWord":
                 self = .writeDownWord(String(userId), String(data))
+            case "restart":
+                self = .restart(String(userId), "temp")
             default:
                 return nil
             }
@@ -157,7 +144,7 @@ final class CmdService {
     }
     
     func startGame() {
-        socketService.send(msg: Cmd.start.cmd)
+        socketService.send(msg: Cmd.start(userId, "temp").cmd)
     }
     
     func joun(team: Team) {

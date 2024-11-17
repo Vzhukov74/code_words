@@ -50,7 +50,7 @@ final class GameService: IGameService {
         let wsContext = WebSocketContext(webSocket: ws, request: req)
         await game.setContext(wsContext, forPlayer: playerId)
 
-        ws.pingInterval = .seconds(5)
+        ws.pingInterval = .seconds(2)
         ws.onText { ws, text in
             guard let cmd = Cmd(rawValue: text) else { return }
             let state = await game.state()

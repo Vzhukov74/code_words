@@ -22,19 +22,21 @@ enum Team: String {
 }
 
 enum Cmd {
-    case start
+    case start(String, String)
     case joinTeam(String, String)
     case becameTeamLeader(String, String)
     case selectWord(String, String)
     case writeDownWord(String, String)
+    case restart(String, String)
     
     var cmd: String {
         switch self {
-        case .start: return "start:temp:temp"
+        case let .start(user, dictionary): return "start:\(user):\(dictionary)"
         case let .joinTeam(user, team): return "joinTeam:\(user):\(team)"
         case let .becameTeamLeader(user, team): return "becameTeamLeader:\(user):\(team)"
         case let .selectWord(user, wordId): return "selectWord:\(user):\(wordId)"
         case let .writeDownWord(word, number): return "writeDownWord:\(word):\(number)"
+        case let .restart(user, _): return "restart:\(user):temp"
         }
     }
     
@@ -48,7 +50,7 @@ enum Cmd {
         
         switch cmdStr {
         case "start":
-            self = .start
+            self = .start(String(userId), String(data))
         case "joinTeam":
             self = .joinTeam(String(userId), String(data))
         case "becameTeamLeader":
@@ -57,6 +59,8 @@ enum Cmd {
             self = .selectWord(String(userId), String(data))
         case "writeDownWord":
             self = .writeDownWord(String(userId), String(data))
+        case "restart":
+            self = .restart(String(userId), "temp")
         default:
             return nil
         }

@@ -37,7 +37,8 @@ struct GState: Codable {
 
 struct LeaderWord: Codable {
     let word: String
-    let number: String
+    let number: Int
+    var numberOfOpenWords: Int
 }
 
 enum Phase: String, Codable {

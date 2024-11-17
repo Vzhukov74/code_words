@@ -78,7 +78,8 @@ extension Game {
     
     struct LeaderWord: Content {
         let word: String
-        let number: String
+        let number: Int
+        var numberOfOpenWords: Int
     }
     
     struct Player: Content {
