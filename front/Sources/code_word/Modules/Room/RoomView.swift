@@ -12,12 +12,24 @@ public struct RoomView: View {
     
     // MARK: State
     
-    @State var isLoading: Bool = false
+    @State var isLoading: Bool = true
     @State var state: GState?
     
     // MARK: UI
     
     public var body: some View {
+        ZStack {
+            VStack(spacing: 0) {
+                TeamsBgColors()
+                    .ignoresSafeArea(.all)
+                    .frame(height: 100)
+                Spacer()
+            }
+            content
+        }.onAppear { prepare() }
+    }
+    
+    private var content: some View {
         Group {
             if isLoading {
                 VStack(alignment: HorizontalAlignment.center, spacing: CGFloat(16)) {
@@ -27,14 +39,14 @@ public struct RoomView: View {
                 }
                     .frame(maxHeight: CGFloat.infinity)
             } else {
-                if let state = state {
-                    gameView(state)
+                if state != nil {
+                    gameView(state!)
                 } else {
                     Text("Ошибка...")
                         .frame(maxWidth: CGFloat.infinity, alignment: Alignment.center)
                 }
             }
-        }.onAppear { prepare() }
+        }
     }
     
     private var headerView: some View {
@@ -48,19 +60,45 @@ public struct RoomView: View {
             .padding(.horizontal, 8)
     }
     
+    @ViewBuilder
     private func gameView(_ state: GState) -> some View {
+        switch state.phase {
+        case .idle:
+            gameIdle(state)
+        case .end:
+            Text("123")
+        case .redLeader, .red, .blueLeader, .blue:
+            game(state)
+        }
+    }
+    
+    private func gameIdle(_ state: GState) -> some View {
         VStack(spacing: 0) {
             headerView
-            TeamsView(
-                state: state, 
+            RoomGameIdle(
+                state: state,
+                isHost: true,
+                onShareGame: {},
+                onStartGame: vm.startGame,
                 onBecameRedLeader: vm.onBecameRedLeader,
-                onJoinRed: vm.onJoinRed,
                 onBecameBlueLeader: vm.onBecameBlueLeader,
+                onJoinRed: vm.onJoinRed,
                 onJoinBlue: vm.onJoinBlue
             )
-            //if vm.hasWordInput {
-                LeaderHitnInputView(vm: vm.leaderHitnInputVM)
-            //}
+
+//            //if vm.hasWordInput {
+//                LeaderHitnInputView(vm: vm.leaderHitnInputVM)
+//            //}
+        }
+    }
+    
+    private func game(_ state: GState) -> some View {
+        VStack(spacing: 0) {
+            headerView
+            TeamsStaticView(
+                state: state
+            )
+            Spacer()
             GameWordsView(words: state.words, canSelect: false, onSelect: vm.onSelect(_:))
             Spacer()
         }
@@ -69,8 +107,8 @@ public struct RoomView: View {
     // MARK: Functions
     
     private func prepare() {
+        isLoading = true
         Task { @MainActor in
-            isLoading = true
             self.state = try! await vm.start { state in
                 Task { @MainActor in
                     self.state = state
@@ -79,7 +117,6 @@ public struct RoomView: View {
             isLoading = false
         }
     }
-    
 }
 
 final class CmdService {

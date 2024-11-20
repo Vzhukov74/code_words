@@ -15,7 +15,7 @@ struct GameActionResolver {
         var state: Game.State?
         
         switch cmd {
-        case let .start(user, dictionary):
+        case let .start(_, dictionary):
             state = start(dictionary: dictionary)
         case let .joinTeam(user, teamStr):
             guard let team = Team(rawValue: teamStr) else { return nil }
@@ -27,7 +27,7 @@ struct GameActionResolver {
             state = selectWord(wordId: wordId, userId: user)
         case let .writeDownWord(word, number):
             state = writeDownWord(word: word, number: number)
-        case let .restart(user, _):
+        case .restart:
             state = restart()
         }
         

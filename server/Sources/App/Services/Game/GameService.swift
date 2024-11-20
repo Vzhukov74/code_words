@@ -26,6 +26,7 @@ final class GameService: IGameService {
         await game.join(player: player)
 
         let state = await game.state()
+        await game.new(state: state)
         
         return state
     }

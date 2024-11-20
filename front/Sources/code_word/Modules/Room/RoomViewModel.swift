@@ -66,17 +66,7 @@ final class RoomViewModel: ObservableObject {
     private func subscribeOnRoomEvents() {
         cmdService.start(gameId: roomId, userId: user.id) { [weak self] newState in
             Task { @MainActor in
-                guard let self else { return }
-                self.onNewState?(newState)
-                
-//                if newState.phase == .redLeader || newState.phase == .blueLeader {
-//                    if newState.readTeamLeader?.id == self.user.id || newState.blueTeamLeader?.id == self.user.id {
-//                        self.hasWordInput = true
-//                    }
-//                } else {
-//                    self.leaderHitnInputVM.clear()
-//                }
-                
+                self?.onNewState?(newState)
             }
         }
     }
