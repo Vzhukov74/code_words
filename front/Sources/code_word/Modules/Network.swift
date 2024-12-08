@@ -16,29 +16,44 @@ struct Request: Codable {
     let player: User
 }
 
-enum Team: String {
-    case red
-    case blue
-}
-
 struct GState: Codable {
     let id: String
-    var readTeamLeader: Player?
-    var blueTeamLeader: Player?
-    var redTeam: [Player] = []
-    var blueTeam: [Player] = []
-    var phase: Phase = .red
+
+    var phase: Phase = .idle
     
-    var redLeaderWords: [LeaderWord] = []
-    var blueLeaderWords: [LeaderWord] = []
-    
+    var teams: [Team] = [Team(), Team()] // red = 0, blue = 1
     var words: [Word] = []
+    
+    init(id: String) {
+        self.id = id
+    }
 }
 
-struct LeaderWord: Codable {
+struct Team: Codable {
+    var countWords: Int = 0
+    var openWords: Int = 0
+    var leader: Player?
+    var players: [Player] = []
+    var words: [Hint] = []
+    var votes: [Vote] = []
+    var endTurn: [Player] = []
+}
+
+struct Vote: Codable {
+    let playerId: String
+    let wordIndex: Int
+}
+
+struct Hint: Codable {
     let word: String
     let number: Int
     var numberOfOpenWords: Int
+}
+
+struct Player: Codable, Hashable {
+    let id: String
+    let name: String
+    let icon: Int?
 }
 
 enum Phase: String, Codable {
@@ -47,12 +62,8 @@ enum Phase: String, Codable {
     case red
     case blueLeader
     case blue
-    case end
-}
-
-struct Player: Codable, Hashable {
-    let id: String
-    let name: String
+    case endRed
+    case endBlue
 }
 
 enum WColor: Int, Codable {
@@ -63,10 +74,10 @@ enum WColor: Int, Codable {
 }
 
 struct Word: Codable, Hashable {
+    let id: Int
     let word: String
     let color: WColor
     var isOpen: Bool = false
-    var elections: [Player] = []
 }
 
 final class Network {

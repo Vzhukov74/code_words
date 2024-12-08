@@ -12,27 +12,25 @@ struct GameActionResolver {
     let hostId: String
     
     func resolve(cmd: Cmd) -> Game.State? {
-        var state: Game.State?
-        
         switch cmd {
         case let .start(dictionary):
-            state = start(dictionary: dictionary)
+            return start(dictionary: dictionary)
         case let .joinTeam(teamStr):
             guard let team = Team(rawValue: teamStr) else { return nil }
-            state = joun(team: team)
+            return joun(team: team)
         case let .becameTeamLeader(teamStr):
             guard let team = Team(rawValue: teamStr) else { return nil }
-            state = becameTeamLeader(team: team)
+            return becameTeamLeader(team: team)
         case let .selectWord(wordIndexStr):
             guard let wordIndex = Int(wordIndexStr) else { return nil }
-            state = selectWord(wordIndex: wordIndex)
+            return selectWord(wordIndex: wordIndex)
         case let .writeDownWord(word, number):
-            state = writeDownWord(word: word, numberStr: number)
+            return writeDownWord(word: word, numberStr: number)
+        case let .endTurn:
+            return handleEndTurn()
         case .restart:
-            state = restart()
+            return restart()
         }
-        
-        return state
     }
     
     func start(dictionary: String) -> Game.State? {
@@ -131,6 +129,23 @@ struct GameActionResolver {
         return state
     }
     
+    func handleEndTurn() -> Game.State? {
+        guard state.phase == .red || state.phase == .blue else { return nil }
+        guard let teamIndex = state.phase.teamIndex else { return nil }
+        guard let player = state.teams[teamIndex].players.first(where: { $0.id == userId }) else { return nil }
+        
+        var state = state
+        
+        state.teams[teamIndex].endTurn.append(player)
+        
+        if state.teams[teamIndex].endTurn.count == state.teams[teamIndex].players.count {
+            state.teams[teamIndex].endTurn = []
+            return onNextPhase(state: state)
+        } else {
+            return state
+        }
+    }
+    
     func restart() -> Game.State {
         var state = state
         state.words = []
@@ -141,12 +156,14 @@ struct GameActionResolver {
         state.teams[0].openWords = 0
         state.teams[0].words = []
         state.teams[0].votes = []
+        state.teams[0].endTurn = []
         
         // blue team
         state.teams[1].countWords = 0
         state.teams[1].openWords = 0
         state.teams[1].words = []
         state.teams[1].votes = []
+        state.teams[1].endTurn = []
         
         return state
     }

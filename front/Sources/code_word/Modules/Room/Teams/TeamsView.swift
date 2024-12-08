@@ -47,8 +47,7 @@ struct TeamsView: View {
         HStack(spacing: 0) {
             VStack(alignment: .leading) {
                 TeamView(
-                    leader: state.readTeamLeader,
-                    players: state.redTeam,
+                    team: state.teams[0], // red team
                     isStatic: isStatic,
                     onBecameLeader: onBecameRedLeader,
                     onJoin: onJoinRed
@@ -58,8 +57,7 @@ struct TeamsView: View {
             .frame(maxWidth: .infinity)
             VStack(alignment: .leading) {
                 TeamView(
-                    leader: state.blueTeamLeader,
-                    players: state.blueTeam,
+                    team: state.teams[1], // red team
                     isStatic: isStatic,
                     onBecameLeader: onBecameBlueLeader,
                     onJoin: onJoinBlue
@@ -77,8 +75,7 @@ struct TeamsView: View {
 
 private struct TeamView: View {
     
-    let leader: Player?
-    let players: [Player]
+    let team: Team
     let isStatic: Bool
     let onBecameLeader: () -> Void
     let onJoin: () -> Void
@@ -87,7 +84,7 @@ private struct TeamView: View {
         VStack(spacing: 8) {
             leaderView
             Divider()
-            ForEach(players, id: \.self) { player in
+            ForEach(team.players, id: \.self) { player in
                 PlayerView(player: player)
             }
             if !isStatic {
@@ -101,8 +98,8 @@ private struct TeamView: View {
     
     @ViewBuilder
     private var leaderView: some View {
-        if leader != nil || isStatic {
-            PlayerView(player: leader ?? Player(id: "", name: "oops no leader!"))
+        if team.leader != nil || isStatic {
+            PlayerView(player: team.leader ?? Player(id: "", name: "oops no leader!", icon: nil))
         } else {
             Button(action: { onBecameLeader() }) {
                 Text("became a team master")

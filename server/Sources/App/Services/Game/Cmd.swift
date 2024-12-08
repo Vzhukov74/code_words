@@ -45,6 +45,7 @@ enum Cmd {
     case becameTeamLeader(String)
     case selectWord(String)
     case writeDownWord(String, String)
+    case endTurn
     case restart
     
     var cmd: String {
@@ -54,6 +55,7 @@ enum Cmd {
         case let .becameTeamLeader(team): return "becameTeamLeader:\(team)"
         case let .selectWord(wordIndex): return "selectWord:\(wordIndex)"
         case let .writeDownWord(word, number): return "writeDownWord:\(word):\(number)"
+        case .endTurn: return "endTurn"
         case .restart: return "restart"
         }
     }
@@ -82,6 +84,8 @@ enum Cmd {
         case "writeDownWord":
             guard let data1, let data2 else { return nil }
             self = .writeDownWord(data1, data2)
+        case "endTurn":
+            self = .endTurn
         case "restart":
             self = .restart
         default:

@@ -78,6 +78,7 @@ extension Game {
         var players: [Player] = []
         var words: [Hint] = []
         var votes: [Vote] = []
+        var endTurn: [Player] = []
         
         var allPlayers: [Player] {
             var all: [Player] = leader != nil ? [leader!] : []
@@ -129,7 +130,6 @@ extension Game {
         let word: String
         let color: WColor
         var isOpen: Bool = false
-        var elections: [Player] = []
     }
     
     enum Phase: String, Content {

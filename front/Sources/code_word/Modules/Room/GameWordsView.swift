@@ -39,15 +39,15 @@ struct GameWordsView: View {
                     .fill(.cyan)
             }
             .onTapGesture { onSelect(word) }
-            .overlay {
-                VStack {
-                    Spacer(minLength: 0)
-                    HStack {
-                        ForEach(word.elections, id: \.self) { player in
-                            Text(player.name)
-                        }
-                    }
-                }
-            }
+//            .overlay {
+//                VStack {
+//                    Spacer(minLength: 0)
+//                    HStack {
+//                        ForEach(word.elections, id: \.self) { player in
+//                            Text(player.name)
+//                        }
+//                    }
+//                }
+//            }
     }
 }

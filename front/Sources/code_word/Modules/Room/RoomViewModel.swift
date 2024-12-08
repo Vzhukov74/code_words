@@ -40,25 +40,25 @@ final class RoomViewModel: ObservableObject {
     }
     
     func onBecameRedLeader() {
-        cmdService.becameTeamLeader(team: .red)
+        cmdService.onBecameRedLeader()
     }
 
     func onJoinRed() {
-        cmdService.joun(team: .red)
+        cmdService.onJoinRed()
     }
 
     func onBecameBlueLeader() {
-        cmdService.becameTeamLeader(team: .blue)
+        cmdService.onBecameBlueLeader()
     }
 
     func onJoinBlue() {
-        cmdService.joun(team: .blue)
+        cmdService.onJoinBlue()
     }
 
     func onSelect(_ word: Word) {
-        cmdService.selectWord(wordId: word.word)
+        cmdService.selectWord(wordIndex: String(word.id)) // word.id it is word index
     }
-        
+
     func onEndOfTurn() {
 
     }
