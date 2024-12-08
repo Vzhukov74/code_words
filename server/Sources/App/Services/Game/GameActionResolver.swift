@@ -15,18 +15,19 @@ struct GameActionResolver {
         var state: Game.State?
         
         switch cmd {
-        case let .start(_, dictionary):
+        case let .start(dictionary):
             state = start(dictionary: dictionary)
-        case let .joinTeam(user, teamStr):
+        case let .joinTeam(teamStr):
             guard let team = Team(rawValue: teamStr) else { return nil }
-            state = joun(team: team, userId: user)
-        case let .becameTeamLeader(user, teamStr):
+            state = joun(team: team)
+        case let .becameTeamLeader(teamStr):
             guard let team = Team(rawValue: teamStr) else { return nil }
-            state = becameTeamLeader(team: team, userId: user)
-        case let .selectWord(user, wordId):
-            state = selectWord(wordId: wordId, userId: user)
+            state = becameTeamLeader(team: team)
+        case let .selectWord(wordIndexStr):
+            guard let wordIndex = Int(wordIndexStr) else { return nil }
+            state = selectWord(wordIndex: wordIndex)
         case let .writeDownWord(word, number):
-            state = writeDownWord(word: word, number: number)
+            state = writeDownWord(word: word, numberStr: number)
         case .restart:
             state = restart()
         }
@@ -46,224 +47,216 @@ struct GameActionResolver {
         state.words = words
         state.phase = redWords == 9 ? .redLeader : .blueLeader
         
-        return state
-    }
-    
-    func joun(team: Team, userId: String) -> Game.State? {
-        guard state.phase == .idle else { return nil }
-
-        var state = state
+        // red team
+        state.teams[0].countWords = redWords
+        state.teams[0].openWords = 0
         
-        switch team {
-        case .red:
-            if let playerIndex = state.blueTeam.firstIndex(where: { $0.id == userId }) {
-                let player = state.blueTeam.remove(at: playerIndex)
-                state.redTeam.append(player)
-                return state
-            }
-        case .blue:
-            if let playerIndex = state.redTeam.firstIndex(where: { $0.id == userId }) {
-                let player = state.redTeam.remove(at: playerIndex)
-                state.blueTeam.append(player)
-                return state
-            }
-        }
-                
-        if state.readTeamLeader?.id == userId {
-            if let player = state.readTeamLeader {
-                state.readTeamLeader = nil
-                switch team {
-                case .red:
-                    state.redTeam.append(player)
-                    return state
-                case .blue:
-                    state.blueTeam.append(player)
-                    return state
-                }
-            }
-        }
-        
-        if state.blueTeamLeader?.id == userId {
-            if let player = state.blueTeamLeader {
-                state.blueTeamLeader = nil
-                switch team {
-                case .red:
-                    state.redTeam.append(player)
-                    return state
-                case .blue:
-                    state.blueTeam.append(player)
-                    return state
-                }
-            }
-        }
-        
-        return nil
-    }
-    
-    func becameTeamLeader(team: Team, userId: String) -> Game.State? {
-        guard state.phase == .idle else { return nil }
-        
-        var state = state
-        
-        switch team {
-        case .red:
-            guard state.readTeamLeader == nil else { return nil }
-        case .blue:
-            guard state.blueTeamLeader == nil else { return nil }
-        }
-        
-        if let playerIndex = state.blueTeam.firstIndex(where: { $0.id == userId }) {
-            let player = state.blueTeam.remove(at: playerIndex)
-            switch team {
-            case .red:
-                state.readTeamLeader = player
-            case .blue:
-                state.blueTeamLeader = player
-            }
-            return state
-        }
-        
-        if let playerIndex = state.redTeam.firstIndex(where: { $0.id == userId }) {
-            let player = state.redTeam.remove(at: playerIndex)
-            switch team {
-            case .red:
-                state.readTeamLeader = player
-            case .blue:
-                state.blueTeamLeader = player
-            }
-            return state
-        }
-        
-        if state.readTeamLeader?.id == userId {
-            if let player = state.readTeamLeader {
-                state.readTeamLeader = nil
-                switch team {
-                case .red:
-                    state.readTeamLeader = player
-                case .blue:
-                    state.blueTeamLeader = player
-                }
-                return state
-            }
-        }
-        
-        if state.blueTeamLeader?.id == userId {
-            if let player = state.blueTeamLeader {
-                state.blueTeamLeader = nil
-                switch team {
-                case .red:
-                    state.readTeamLeader = player
-                case .blue:
-                    state.blueTeamLeader = player
-                }
-                return state
-            }
-        }
-        
-        return nil
-    }
-    
-    func selectWord(wordId: String, userId: String) -> Game.State? {
-        var state = state
-        
-        var team: [Game.Player] = []
-        var player: Game.Player? = nil
-        switch state.phase {
-        case .red:
-            team = state.redTeam
-        case .blue:
-            team = state.blueTeam
-        default:
-            return nil
-        }
-        
-        if let playerIndex = team.firstIndex(where: { $0.id == userId }) {
-            player = team[playerIndex]
-        }
-        
-        guard player != nil else { return nil }
-
-        if let wordIndex = state.words.firstIndex(where: { $0.elections.contains(where: { $0.id == player!.id }) }) {
-            if state.words[wordIndex].word != wordId {
-                state.words[wordIndex].elections.removeAll(where: { $0.id == player!.id })
-            }
-        }
-        
-        if let wordIndex = state.words.firstIndex(where: { $0.word == wordId }) {
-            state.words[wordIndex].elections.append(player!)
-            
-            if state.words[wordIndex].elections.count == team.count {
-                state.words[wordIndex].elections = []
-                state.words[wordIndex].isOpen = true
-                
-                if state.words[wordIndex].color == .gray {
-                    state.phase = state.phase == .red ? .blueLeader : .redLeader
-                } else if state.words[wordIndex].color == .black {
-                    state.phase = .end
-                } else if state.words[wordIndex].color == .red, state.phase == .red {
-                    switch state.phase {
-                    case .red:
-                        state.redLeaderWords[state.redLeaderWords.count - 1].numberOfOpenWords += 1
-                        if state.redLeaderWords[state.redLeaderWords.count - 1].numberOfOpenWords == state.redLeaderWords[state.redLeaderWords.count - 1].number {
-                            state.phase = state.phase == .red ? .blueLeader : .redLeader
-                        }
-                    case .blue:
-                        state.blueLeaderWords[state.blueLeaderWords.count - 1].numberOfOpenWords += 1
-                        if state.blueLeaderWords[state.blueLeaderWords.count - 1].numberOfOpenWords == state.blueLeaderWords[state.blueLeaderWords.count - 1].number {
-                            state.phase = state.phase == .red ? .blueLeader : .redLeader
-                        }
-                    default:
-                        return nil
-                    }
-                    
-                } else if state.words[wordIndex].color == .blue, state.phase == .blue {
-                    switch state.phase {
-                    case .red:
-                        team = state.redTeam
-                    case .blue:
-                        team = state.blueTeam
-                    default:
-                        return nil
-                    }
-                } else {
-                    state.phase = state.phase == .red ? .blueLeader : .redLeader
-                }
-            }
-        }
+        // blue team
+        state.teams[1].countWords = redWords == 9 ? 8 : 9
+        state.teams[1].openWords = 0
         
         return state
     }
     
-    func writeDownWord(word: String, number: String) -> Game.State? {
+    func joun(team: Team) -> Game.State? {
+        guard state.phase == .idle else { return nil }
+
+        var state = state
+        let teamIndex = team.teamIndex // index to join
+        let oppositeTeamIndex = team.oppositeTeamIndex
+        
+        // find currnent user team to move him to new team
+        guard let player = findAndRemovePlayerFromTeam(
+            state: &state,
+            teamIndex: teamIndex,
+            oppositeTeamIndex: oppositeTeamIndex
+        ) else { return nil }
+        
+        state.teams[teamIndex].players.append(player)
+        
+        return state
+    }
+    
+    func becameTeamLeader(team: Team) -> Game.State? {
+        guard state.phase == .idle else { return nil }
+
+        var state = state
+        let teamIndex = team.teamIndex // index to join
+        let oppositeTeamIndex = team.oppositeTeamIndex
+        
+        // find currnent user team to move him to new team
+        guard let player = findAndRemovePlayerFromTeam(
+            state: &state,
+            teamIndex: teamIndex,
+            oppositeTeamIndex: oppositeTeamIndex
+        ) else { return nil }
+        
+        state.teams[teamIndex].leader = player
+        
+        return state
+    }
+    
+    func selectWord(wordIndex: Int) -> Game.State? {
+        guard state.phase == .red || state.phase == .blue else { return nil }
+        guard let teamIndex = state.phase.teamIndex else { return nil }
+        
         var state = state
         
-        switch state.phase {
-        case .redLeader:
-            if state.readTeamLeader?.id == userId {
-                state.phase = .red
-                state.redLeaderWords.append(Game.LeaderWord(word: word, number: Int(number)!, numberOfOpenWords: 0))
-                return state
-            }
-        case .blueLeader:
-            if state.blueTeamLeader?.id == userId {
-                state.phase = .blue
-                state.blueLeaderWords.append(Game.LeaderWord(word: word, number: Int(number)!, numberOfOpenWords: 0))
-                return state
-            }
-        default:
-            return nil
+        let vote = Game.Vote(playerId: userId, wordIndex: wordIndex)
+        
+        if let voteIndex = state.teams[teamIndex].votes.firstIndex(where: { $0.playerId == userId }) {
+            state.teams[teamIndex].votes.remove(at: voteIndex)
         }
         
-        return nil
+        state.teams[teamIndex].votes.append(vote)
+        
+        return handleVote(state: state, teamIndex: teamIndex)
+    }
+    
+    func writeDownWord(word: String, numberStr: String) -> Game.State? {
+        guard state.phase == .blueLeader || state.phase == .redLeader else { return nil }
+        guard let teamIndex = state.phase.teamIndex else { return nil }
+        guard let number = Int(numberStr) else { return nil }
+        
+        var state = state
+        
+        let word = Game.Hint(
+            word: word,
+            number: number,
+            numberOfOpenWords: 0
+        )
+        
+        state.teams[teamIndex].words.append(word)
+        
+        return state
     }
     
     func restart() -> Game.State {
         var state = state
         state.words = []
         state.phase = .idle
-        state.blueLeaderWords = []
-        state.redLeaderWords = []
         
+        // red team
+        state.teams[0].countWords = 0
+        state.teams[0].openWords = 0
+        state.teams[0].words = []
+        state.teams[0].votes = []
+        
+        // blue team
+        state.teams[1].countWords = 0
+        state.teams[1].openWords = 0
+        state.teams[1].words = []
+        state.teams[1].votes = []
+        
+        return state
+    }
+    
+    // MARK: Private
+    
+    /// find and remove player from team
+    /// teamIndex it is index to join, oppositeTeamIndex it is index from witch team player gonna leave
+    private func findAndRemovePlayerFromTeam(state: inout Game.State, teamIndex: Int, oppositeTeamIndex: Int) -> Game.Player? {
+        // handle oppositeTeam
+        if (state.teams[oppositeTeamIndex].leader?.id ?? "") == userId { // player is leader of oppositeTeam
+            let player = state.teams[oppositeTeamIndex].leader
+            state.teams[oppositeTeamIndex].leader = nil
+            return player
+        }
+        if let index = state.teams[oppositeTeamIndex].players.firstIndex(where: { $0.id == userId }) {
+            return state.teams[oppositeTeamIndex].players.remove(at: index)
+        }
+        // handle team to join
+        if (state.teams[teamIndex].leader?.id ?? "") == userId { // player is leader of oppositeTeam
+            let player = state.teams[teamIndex].leader
+            state.teams[teamIndex].leader = nil
+            return player
+        }
+        if let index = state.teams[teamIndex].players.firstIndex(where: { $0.id == userId }) {
+            return state.teams[teamIndex].players.remove(at: index)
+        }
+
+        return nil
+    }
+    
+    /// handle votes
+    private func handleVote(state: Game.State, teamIndex: Int) -> Game.State? {
+        let playersCount = state.teams[teamIndex].players.count
+
+        // key is word index | value is votes counter
+        var votes: [Int: Int] = [:]
+
+        state.teams[teamIndex].votes.forEach {
+            votes[$0.wordIndex] = (votes[$0.wordIndex] ?? 0) + 1
+        }
+
+        for wordIndex in votes.keys where (votes[wordIndex] ?? 0) == playersCount {
+            // open word and handle next move
+            return openWord(state: state, wordIndex: wordIndex, teamIndex: teamIndex)
+        }
+
+        return state
+    }
+    
+    private func openWord(state: Game.State, wordIndex: Int, teamIndex: Int) -> Game.State? {
+        var state = state
+        
+        state.teams[teamIndex].votes = []
+        state.words[wordIndex].isOpen = true
+        
+        let hintIndex = state.teams[teamIndex].words.endIndex
+        let color = state.words[wordIndex].color
+        let colorIndex = color.index
+        
+        if colorIndex == teamIndex { // team open right word
+            state.teams[teamIndex].words[hintIndex].numberOfOpenWords += 1
+            state.teams[teamIndex].openWords += 1
+            
+            if state.teams[teamIndex].openWords == state.teams[teamIndex].countWords { // team won
+                return endGame(state: state, teamIndex: teamIndex)
+            } else {
+                if state.teams[teamIndex].words[hintIndex].numberOfOpenWords == state.teams[teamIndex].words[hintIndex].number {
+                    return onNextPhase(state: state)
+                } else {
+                    return state
+                }
+            }
+        } else if color == .black { // team open black (end of the game)
+            return endGame(state: state, teamIndex: teamIndex == 0 ? 1 : 0)
+        } else { // team open wrong word
+            return onNextPhase(state: state)
+        }
+    }
+    
+    private func onNextPhase(state: Game.State) -> Game.State? {
+        var state = state
+        
+        switch state.phase {
+        case .blue:
+            state.phase = .redLeader
+            return state
+        case .blueLeader:
+            state.phase = .blue
+            return state
+        case .red:
+            state.phase = .blueLeader
+            return state
+        case .redLeader:
+            state.phase = .red
+            return state
+        default:
+            return nil
+        }
+    }
+    
+    private func endGame(state: Game.State, teamIndex: Int) -> Game.State {
+        var state = state
+        
+        if teamIndex == 0 {
+            state.phase = .endRed
+        } else {
+            state.phase = .endBlue
+        }
+    
         return state
     }
 }

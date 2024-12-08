@@ -32,10 +32,10 @@ actor Game {
     }
     
     func join(player: Player) {
-        if _state.redTeam.count > _state.blueTeam.count {
-            _state.blueTeam.append(player)
+        if _state.teams[0].players.count > _state.teams[1].players.count {
+            _state.teams[1].players.append(player)
         } else {
-            _state.redTeam.append(player)
+            _state.teams[0].players.append(player)
         }
     }
     
@@ -60,15 +60,10 @@ actor Game {
 extension Game {
     struct State: Content {
         let id: String
-        var readTeamLeader: Player?
-        var blueTeamLeader: Player?
-        var redTeam: [Player] = []
-        var blueTeam: [Player] = []
+
         var phase: Phase = .idle
         
-        var redLeaderWords: [LeaderWord] = []
-        var blueLeaderWords: [LeaderWord] = []
-        
+        var teams: [Team] = [Team(), Team()] // red = 0, blue = 1
         var words: [Word] = []
         
         init(id: String) {
@@ -76,7 +71,28 @@ extension Game {
         }
     }
     
-    struct LeaderWord: Content {
+    struct Team: Content {
+        var countWords: Int = 0
+        var openWords: Int = 0
+        var leader: Player?
+        var players: [Player] = []
+        var words: [Hint] = []
+        var votes: [Vote] = []
+        
+        var allPlayers: [Player] {
+            var all: [Player] = leader != nil ? [leader!] : []
+            all.append(contentsOf: players)
+            
+            return all
+        }
+    }
+    
+    struct Vote: Content {
+        let playerId: String
+        let wordIndex: Int
+    }
+    
+    struct Hint: Content {
         let word: String
         let number: Int
         var numberOfOpenWords: Int
@@ -93,9 +109,23 @@ extension Game {
         case red
         case blue
         case black
+        
+        var index: Int? {
+            switch self {
+            case .red:
+                return 0
+            case .blue:
+                return 1
+            case .gray:
+                return 2
+            case .black:
+                return 3
+            }
+        }
     }
     
     struct Word: Content {
+        let id: Int
         let word: String
         let color: WColor
         var isOpen: Bool = false
@@ -108,20 +138,27 @@ extension Game {
         case red
         case blueLeader
         case blue
-        case end
+        case endRed
+        case endBlue
+        
+        var teamIndex: Int? {
+            switch self {
+            case .red, .redLeader:
+                return 0
+            case .blue, .blueLeader:
+                return 1
+            default:
+                return nil
+            }
+        }
     }
 }
 
 extension Game.State {
     var allPlayers: [Game.Player] {
-        var players = blueTeam
-        players.append(contentsOf: redTeam)
-        if let blueTeamLeader {
-            players.append(blueTeamLeader)
-        }
-        if let readTeamLeader {
-            players.append(readTeamLeader)
-        }
+        guard teams.count == 2 else { return [] }
+        var players = teams[0].allPlayers
+        players.append(contentsOf: teams[1].allPlayers)
 
         return players
     }

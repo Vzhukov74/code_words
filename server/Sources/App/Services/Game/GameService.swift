@@ -16,24 +16,24 @@ final class GameService: IGameService {
     
     func join(gameId: String, player: Game.Player) async throws -> Game.State {
         guard let game = await gamesStore.game(by: gameId) else {
-            throw Abort(.forbidden, reason: "Cannot connect to a game you are not a part of")
+            throw Abort(.notFound, reason: "game don't exist")
         }
         
-        guard await !game.isPlaying(player: player.id) else {
-            throw Abort(.forbidden, reason: "Cannot connect to a game you are not a part of")
-        }
-        
-        await game.join(player: player)
+        if await game.isPlaying(player: player.id) { // already is plaing
+            return await game.state()
+        } else {
+            await game.join(player: player)
 
-        let state = await game.state()
-        await game.new(state: state)
-        
-        return state
+            let state = await game.state()
+            await game.new(state: state)
+            
+            return state
+        }
     }
     
     func game(by id: String) async throws -> Game.State {
         guard let game = await gamesStore.game(by: id) else {
-            throw Abort(.forbidden, reason: "Cannot connect to a game you are not a part of")
+            throw Abort(.notFound, reason: "game don't exist")
         }
 
         return await game.state()
@@ -41,7 +41,7 @@ final class GameService: IGameService {
     
     func connect(to gameId: String, playerId: String, ws: WebSocket, on req: Request) async throws -> HTTPStatus {
         guard let game = await gamesStore.game(by: gameId) else {
-            throw Abort(.badRequest, reason: "game don't exist")
+            throw Abort(.notFound, reason: "game don't exist")
         }
         
         guard await game.isPlaying(player: playerId) == true else {

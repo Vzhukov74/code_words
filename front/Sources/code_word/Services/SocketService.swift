@@ -11,7 +11,7 @@ final class SocketService {
     #if !SKIP
     private let baseUrl = URL(string: "http://127.0.0.1:8080/socket/connect")!
     #else
-    private let baseUrl = URL(string: "http://10.0.2.2:8080/socket/connect")!
+    private let baseUrl = URL(string: "http://192.168.31.236:8080/socket/connect")! //10.0.2.2
     #endif
     
     private var webSocketTask: URLSessionWebSocketTask?

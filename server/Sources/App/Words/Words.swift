@@ -8,10 +8,11 @@
 final class WordsPreparer: Sendable {
     static func prepare(words: [String]) -> [Game.Word] {
         var colors = colors()
-        return words.map {
+        return words.indices.map { index in
+            let word = words[index]
             let index = (0..<colors.count).randomElement()!
             let color = colors.remove(at: index)
-            return Game.Word(word: $0, color: Game.WColor(rawValue: color)!)
+            return Game.Word(id: index, word: word, color: Game.WColor(rawValue: color)!)
         }
     }
     

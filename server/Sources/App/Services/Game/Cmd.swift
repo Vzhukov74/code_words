@@ -19,48 +19,71 @@ enum Team: String {
             return nil
         }
     }
+    
+    var teamIndex: Int {
+        switch self {
+        case .red:
+            return 0
+        case .blue:
+            return 1
+        }
+    }
+    
+    var oppositeTeamIndex: Int {
+        switch self {
+        case .red:
+            return 1
+        case .blue:
+            return 0
+        }
+    }
 }
 
 enum Cmd {
-    case start(String, String)
-    case joinTeam(String, String)
-    case becameTeamLeader(String, String)
-    case selectWord(String, String)
+    case start(String)
+    case joinTeam(String)
+    case becameTeamLeader(String)
+    case selectWord(String)
     case writeDownWord(String, String)
-    case restart(String, String)
+    case restart
     
     var cmd: String {
         switch self {
-        case let .start(user, dictionary): return "start:\(user):\(dictionary)"
-        case let .joinTeam(user, team): return "joinTeam:\(user):\(team)"
-        case let .becameTeamLeader(user, team): return "becameTeamLeader:\(user):\(team)"
-        case let .selectWord(user, wordId): return "selectWord:\(user):\(wordId)"
+        case let .start(dictionary): return "start:\(dictionary)"
+        case let .joinTeam(team): return "joinTeam:\(team)"
+        case let .becameTeamLeader(team): return "becameTeamLeader:\(team)"
+        case let .selectWord(wordIndex): return "selectWord:\(wordIndex)"
         case let .writeDownWord(word, number): return "writeDownWord:\(word):\(number)"
-        case let .restart(user, _): return "restart:\(user):temp"
+        case .restart: return "restart"
         }
     }
     
     init?(rawValue: String) {
         let split = rawValue.split(separator: ":")
-        guard split.count == 3 else { return nil }
+        guard split.count > 0 else { return nil }
         
-        let cmdStr = split[0]
-        let userId = split[1]
-        let data = split[2]
+        let cmdStr = String(split[0])
+        let data1: String? = split.count >= 2 ? String(split[1]) : nil
+        let data2: String? = split.count >= 3 ? String(split[1]) : nil
         
         switch cmdStr {
         case "start":
-            self = .start(String(userId), String(data))
+            guard let data1 else { return nil }
+            self = .start(data1)
         case "joinTeam":
-            self = .joinTeam(String(userId), String(data))
+            guard let data1 else { return nil }
+            self = .joinTeam(data1)
         case "becameTeamLeader":
-            self = .becameTeamLeader(String(userId), String(data))
+            guard let data1 else { return nil }
+            self = .becameTeamLeader(data1)
         case "selectWord":
-            self = .selectWord(String(userId), String(data))
+            guard let data1 else { return nil }
+            self = .selectWord(data1)
         case "writeDownWord":
-            self = .writeDownWord(String(userId), String(data))
+            guard let data1, let data2 else { return nil }
+            self = .writeDownWord(data1, data2)
         case "restart":
-            self = .restart(String(userId), "temp")
+            self = .restart
         default:
             return nil
         }

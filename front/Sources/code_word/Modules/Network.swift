@@ -74,7 +74,7 @@ final class Network {
     #if !SKIP
     private let baseUrl = URL(string: "http://127.0.0.1:8080/")!
     #else
-    private let baseUrl = URL(string: "http://10.0.2.2:8080/")!
+    private let baseUrl = URL(string: "http://192.168.31.236:8080/")!
     #endif
     
     /// return game id
