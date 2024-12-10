@@ -14,7 +14,7 @@ final class DI {
     lazy var navigation = Navigation()
     lazy var network = Network()
     lazy var mainState = MainState()
-    lazy var userService: IUserService = UserService()
+    //lazy var userService: IUserService = UserService()
     lazy var socketService = SocketService()
     
     var user: User?

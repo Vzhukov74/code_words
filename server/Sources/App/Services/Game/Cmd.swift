@@ -66,7 +66,7 @@ enum Cmd {
         
         let cmdStr = String(split[0])
         let data1: String? = split.count >= 2 ? String(split[1]) : nil
-        let data2: String? = split.count >= 3 ? String(split[1]) : nil
+        let data2: String? = split.count >= 3 ? String(split[2]) : nil
         
         switch cmdStr {
         case "start":

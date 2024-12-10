@@ -29,6 +29,18 @@ enum PlayerAvatars: CaseIterable {
     case avt19
     case avt20
     
+    static func vm(by index: Int) -> AvatarViewModel {
+        guard index < PlayerAvatars.allCases.count, index >= 0 else { return PlayerAvatars.avt1.model() }
+        
+        return PlayerAvatars.allCases[index].model()
+    }
+    
+    static func image(by index: Int) -> Image {
+        guard index < PlayerAvatars.allCases.count, index >= 0 else { return PlayerAvatars.avt1.image() }
+        
+        return PlayerAvatars.allCases[index].image()
+    }
+    
     func model() -> AvatarViewModel {
         AvatarViewModel(
             type: .avt1,

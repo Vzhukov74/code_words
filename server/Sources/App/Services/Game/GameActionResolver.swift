@@ -26,7 +26,7 @@ struct GameActionResolver {
             return selectWord(wordIndex: wordIndex)
         case let .writeDownWord(word, number):
             return writeDownWord(word: word, numberStr: number)
-        case let .endTurn:
+        case .endTurn:
             return handleEndTurn()
         case .restart:
             return restart()
@@ -126,7 +126,7 @@ struct GameActionResolver {
         
         state.teams[teamIndex].words.append(word)
         
-        return state
+        return onNextPhase(state: state)
     }
     
     func handleEndTurn() -> Game.State? {

@@ -23,12 +23,10 @@ final class MainViewModel: ObservableObject {
         DI.shared.roomId = roomId
         DI.shared.user = user
         
-        joinToRoom(id: roomId)
+        joinToRoom(id: roomId, with: user)
     }
     
-    func joinToRoom(id: String) {
-        guard let user = DI.shared.user else { return }
-        
+    func joinToRoom(id: String, with user: User) {
         DI.shared.roomId = id
         DI.shared.user = user
         navigation.joinToRoom()

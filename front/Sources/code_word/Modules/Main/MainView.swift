@@ -8,7 +8,6 @@ struct MainView: View {
     // Android can work with AppStorage only in view context (yeap, android it is shit)
     @AppStorage("app.vz.code.word.user.name.key") private var userNameCache: String = ""
     @AppStorage("app.vz.code.word.user.icon.key") private var userIconCache: Int = 0
-    @AppStorage("app.vz.code.word.user.id.key") private var userIdCache: String = UUID().uuidString.lowercased().replacingOccurrences(of: "-", with: "")
     
     @State var isLoading: Bool = false
     @State var error: String = ""
@@ -28,7 +27,7 @@ struct MainView: View {
             Spacer()
             Button(action: vm.configureUser) {
                 VStack {
-                    AvatarView(vm: PlayerAvatars.avt16.model(), space: 4, size: 25, radius: 4)
+                    AvatarView(vm: PlayerAvatars.vm(by: userIconCache), space: 4, size: 25, radius: 4)
                     Text(userNameCache)
                         .font(Font.title)
                         .foregroundStyle(AppColor.red)
@@ -64,7 +63,7 @@ struct MainView: View {
             
             AppMainButton(
                 title: "Присоедениться",
-                action: { vm.joinToRoom(id: "newgame") },
+                action: { joinToRoom() },
                 color: AppColor.blue
             )
         }
@@ -74,6 +73,7 @@ struct MainView: View {
     private func createRoom() {
         Task { @MainActor in
             isLoading = true
+            userModel()
             do {
                 try await vm.createAndJoinRoom(with: DI.shared.user!)
                 isLoading = false
@@ -86,8 +86,24 @@ struct MainView: View {
     }
     
     private func userModel() {
-        let user = User(id: userIdCache, name: userNameCache/*, icon: userIconCache*/)
+        let id: String
+        if UserDefaults.standard.string(forKey: "app.vz.code.word.user.id.key") != nil {
+            id = UserDefaults.standard.string(forKey: "app.vz.code.word.user.id.key")!
+        } else {
+            id = UUID().uuidString.lowercased().replacingOccurrences(of: "-", with: "")
+            UserDefaults.standard.set(
+                id,
+                forKey: "app.vz.code.word.user.id.key"
+            )
+        }
+ 
+        let user = User(id: id, name: userNameCache, icon: userIconCache)
         DI.shared.user = user
+    }
+    
+    private func joinToRoom() {
+        userModel()
+        vm.joinToRoom(id: "newgame", with: DI.shared.user!)
     }
     
     private func showError() {

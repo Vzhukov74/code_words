@@ -53,6 +53,7 @@ struct TeamsView: View {
                     onJoin: onJoinRed
                 )
                     .padding(.horizontal, 8)
+                    .padding(.bottom, 16)
             }
             .frame(maxWidth: .infinity)
             VStack(alignment: .leading) {
@@ -63,6 +64,7 @@ struct TeamsView: View {
                     onJoin: onJoinBlue
                 )
                     .padding(.horizontal, 8)
+                    .padding(.bottom, 16)
             }
             .frame(maxWidth: .infinity)
         }

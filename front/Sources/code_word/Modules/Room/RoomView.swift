@@ -15,6 +15,20 @@ public struct RoomView: View {
     @State var isLoading: Bool = true
     @State var state: GState?
     
+    private var isLeader: Bool {
+        guard let state else { return false }
+
+        return state.teams[0].leader?.id == vm.user.id ||
+        state.teams[1].leader?.id == vm.user.id
+    }
+    
+    private var canSelect: Bool {
+        guard let state else { return false }
+        guard state.phase == .red ||  state.phase == .blue else { return false }
+        
+        return state.teams[0].players.contains(where: { $0.id == vm.user.id }) || state.teams[1].players.contains(where: { $0.id == vm.user.id })
+    }
+    
     // MARK: UI
     
     public var body: some View {
@@ -85,10 +99,6 @@ public struct RoomView: View {
                 onJoinRed: vm.onJoinRed,
                 onJoinBlue: vm.onJoinBlue
             )
-
-//            //if vm.hasWordInput {
-//                LeaderHitnInputView(vm: vm.leaderHitnInputVM)
-//            //}
         }
     }
     
@@ -98,9 +108,26 @@ public struct RoomView: View {
             TeamsStaticView(
                 state: state
             )
+            hintInput(state)
             Spacer()
-            GameWordsView(words: state.words, canSelect: false, onSelect: vm.onSelect(_:))
+            GameWordsView(
+                words: state.words,
+                isOpen: isLeader,
+                canSelect: canSelect,
+                onSelect: vm.onSelect(_:)
+            )
+                .padding(.horizontal, 8)
             Spacer()
+        }
+    }
+    
+    @ViewBuilder
+    private func hintInput(_ state: GState) -> some View {
+        if (state.phase == .redLeader || state.phase == .blueLeader), isLeader {
+            LeaderHitnInputView(vm: vm.leaderHitnInputVM)
+                .padding(.horizontal, 8)
+        } else {
+            EmptyView()
         }
     }
     

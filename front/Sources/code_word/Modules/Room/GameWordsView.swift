@@ -10,6 +10,7 @@ import SwiftUI
 struct GameWordsView: View {
     
     let words: [Word]
+    let isOpen: Bool
     let canSelect: Bool
     let onSelect: (Word) -> Void
     

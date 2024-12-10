@@ -14,7 +14,7 @@ final class RoomViewModel: ObservableObject {
     private let network: Network
     private let cmdService: CmdService
     private let roomId: String
-    private let user: User
+    let user: User
     
     private var onNewState: ((GState) -> Void)?
     

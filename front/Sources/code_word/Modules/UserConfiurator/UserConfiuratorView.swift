@@ -7,33 +7,29 @@
 
 import SwiftUI
 
-final class UserConfiuratorViewModel: ObservableObject {
+struct UserConfiuratorView: View {
+    let navigation: Navigation
     
-    @Published var avatarVM: AvatarViewModel = AvatarViewModel(
+    @State var avatarVM: AvatarViewModel = AvatarViewModel(
         type: PlayerAvatars.avt1,
         color: AppColor.blue,
         cells: PlayerAvatars.avt1.viewModel()
     )
-    @Published var selectedAvatarIndex: Int = 1
+    @State var selectedAvatarIndex: Int = 0
     
     let avatars: [AvatarViewModel] = PlayerAvatars.allCases.compactMap { playerAvatar in
         AvatarViewModel(type: playerAvatar, color: AppColor.blue, cells: playerAvatar.viewModel())
     }
-    
-    func onSelectAvatar(index: Int) {
-        avatarVM.type = avatars[index].type
-        avatarVM.cells = avatars[index].cells
-    }
-}
 
-struct UserConfiuratorView: View {
-    let navigation: Navigation
-    
-    @StateObject var vm: UserConfiuratorViewModel = UserConfiuratorViewModel()
-    
     @AppStorage("app.vz.code.word.user.name.key") var userNameCache: String = ""
     @AppStorage("app.vz.code.word.user.icon.key") var userIconCache: Int = 0
-    @AppStorage("app.vz.code.word.user.id.key") var userIdCache: String = UUID().uuidString.lowercased().replacingOccurrences(of: "-", with: "")
+    
+    init(navigation: Navigation) {
+        self.navigation = navigation
+        self.selectedAvatarIndex = userIconCache
+        self.avatarVM.type = avatars[userIconCache].type
+        self.avatarVM.cells = avatars[userIconCache].cells
+    }
     
     var body: some View {
         VStack(spacing: 16) {
@@ -90,12 +86,13 @@ struct UserConfiuratorView: View {
     
     private var avatarView: some View {
         VStack(spacing: 16) {
-            AvatarView(vm: vm.avatarVM, space: 4, size: 16, radius: 4)
+            AvatarView(vm: avatarVM, space: 4, size: 16, radius: 4)
+                .frame(height: 180)
             ScrollView(.horizontal) {
                 LazyHStack(spacing: 16) {
-                    ForEach(0..<vm.avatars.count, id: \.self) { index in
+                    ForEach(0..<avatars.count, id: \.self) { index in
                         Button(action: { safe(index: index) }) {
-                            avatarCell(avatarVM: vm.avatars[index])
+                            avatarCell(avatarVM: avatars[index])
                         }
                     }
                 }
@@ -119,31 +116,30 @@ struct UserConfiuratorView: View {
     }
     
     func readyHandler() {
-        let user = User(id: userIdCache, name: userNameCache)
-        DI.shared.user = user
+        userIconCache = selectedAvatarIndex
+//        let user = User(id: userIdCache, name: userNameCache, icon: selectedAvatarIndex)
+//        DI.shared.user = user
         
         navigation.back()
     }
-    
+        
     func safe(index: Int) {
-        #if !SKIP
-        let renderer = ImageRenderer(content: AvatarView(vm: vm.avatars[index], space: 1, size: 6, radius: 2))
-
-        if let uiImage = renderer.uiImage {
-            if let data = uiImage.pngData() {
-                    let filename = getDocumentsDirectory().appendingPathComponent("\(index).png")
-                    try? data.write(to: filename)
-                }
-        }
+        userIconCache = index
         
+        avatarVM.type = avatars[index].type
+        avatarVM.cells = avatars[index].cells
         
-        #endif
+//        let renderer = ImageRenderer(content: AvatarView(vm: avatars[index], space: 1, size: 6, radius: 2))
+//        if let uiImage = renderer.uiImage {
+//            if let data = uiImage.pngData() {
+//                let filename = getDocumentsDirectory().appendingPathComponent("\(index).png")
+//                try? data.write(to: filename)
+//            }
+//        }
     }
 }
 
-#if !SKIP
-func getDocumentsDirectory() -> URL {
-    let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
-    return paths[0]
-}
-#endif
+//func getDocumentsDirectory() -> URL {
+//    let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
+//    return paths[0]
+//}
