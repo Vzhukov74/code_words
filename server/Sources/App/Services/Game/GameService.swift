@@ -63,6 +63,10 @@ final class GameService: IGameService {
         return .ok
     }
     
+    func all() async throws -> [String] {
+        await gamesStore.all()
+    }
+    
     func reset() async throws {
         await gamesStore.reset()
     }

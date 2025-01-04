@@ -21,6 +21,10 @@ actor GamesStore {
         games.removeValue(forKey: id)
     }
     
+    func all() -> [String] {
+        games.keys.compactMap { String($0) }
+    }
+    
     func reset() {
         games.removeAll()
     }

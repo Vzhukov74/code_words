@@ -7,7 +7,13 @@
     <link rel="icon" type="image/x-icon" href="/images/donna_3.jpg">
   </head>
   <body>
-    <h1>345</h1>
-    <img src="images/donna_3.jpg" alt="Italian Trulli">
+    <h1>Current game list</h1>
+    <ul>
+    #for(game in games):
+        <form action="http://127.0.0.1:8080/games/detail/#(game)">
+            <input type="submit" value="#(game)" />
+        </form>
+    #endfor
+    </ul>
   </body>
 </html>

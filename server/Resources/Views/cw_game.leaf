@@ -7,7 +7,7 @@
     <link rel="icon" type="image/x-icon" href="/images/donna_3.jpg">
   </head>
   <body>
-    <h1>345</h1>
-    <img src="images/donna_3.jpg" alt="Italian Trulli">
+    <h1>Enjoy</h1>
+    <img src="http://127.0.0.1:8080/images/pm.jpg" alt="Italian Trulli">
   </body>
 </html>
