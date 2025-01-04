@@ -20,4 +20,8 @@ actor GamesStore {
     func remove(by id: String) {
         games.removeValue(forKey: id)
     }
+    
+    func reset() {
+        games.removeAll()
+    }
 }

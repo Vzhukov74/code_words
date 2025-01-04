@@ -13,6 +13,7 @@ protocol IGameService: Sendable {
     func game(by id: String) async throws -> Game.State
 
     func connect(to gameId: String, playerId: String, ws: WebSocket, on req: Request) async throws -> HTTPStatus
+    func reset() async throws
 }
 
 // MARK: - Storage

@@ -8,17 +8,18 @@
 import Foundation
 
 final class SocketService {
-    #if !SKIP
-    private let baseUrl = URL(string: "http://127.0.0.1:8080/socket/connect")!
-    #else
-    private let baseUrl = URL(string: "http://192.168.31.236:8080/socket/connect")! //10.0.2.2
-    #endif
     
+    private let baseUrl: URL
+    private let path = "socket/connect/"
     private var webSocketTask: URLSessionWebSocketTask?
     private var onReceive: ((Data) -> Void)?
     
+    init(baseUrl: URL = BaseUrls().baseUrl) {
+        self.baseUrl = baseUrl
+    }
+    
     func connect(to gameId: String, userId: String, onReceive: @escaping (Data) -> Void) {
-        let url = baseUrl.appendingPathComponent("\(gameId)/\(userId)")
+        let url = baseUrl.appendingPathComponent("\(path)\(gameId)/\(userId)")
         let request = URLRequest(url: url)
         
         webSocketTask = URLSession.shared.webSocketTask(with: request)
@@ -41,7 +42,6 @@ final class SocketService {
     private func receive() {
         Task {
             let result = try? await webSocketTask?.receive()
-            logger.info("receive_result" )
             if result != nil {
                 switch result {
                 case let .string(msg):

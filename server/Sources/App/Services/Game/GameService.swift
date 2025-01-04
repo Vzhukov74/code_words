@@ -62,4 +62,8 @@ final class GameService: IGameService {
 
         return .ok
     }
+    
+    func reset() async throws {
+        await gamesStore.reset()
+    }
 }
