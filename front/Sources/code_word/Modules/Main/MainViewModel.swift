@@ -23,7 +23,9 @@ final class MainViewModel: ObservableObject {
         DI.shared.roomId = roomId
         DI.shared.user = user
         
-        joinToRoom(id: roomId, with: user)
+        Task { @MainActor in
+            joinToRoom(id: roomId, with: user)
+        }
     }
     
     func joinToRoom(id: String, with user: User) {

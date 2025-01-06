@@ -20,9 +20,12 @@ final class FrontController: RouteCollection {
                     return try await req.view.render("cw_game_list", GameList(games: games))
                 }
                 games.get("detail", ":gameId") { req async throws -> View in
-                    let gameId = req.parameters.get("gameId")
-                    print(gameId)
-                    return try await req.view.render("cw_game")
+                    guard let id = req.parameters.get("gameId") else {
+                        throw Abort(.badRequest)
+                    }
+                    let state = try await req.application.gameService.game(by: id)
+                    
+                    return try await req.view.render("cw_game", GameDetail(state: state))
                 }
             }
         }
@@ -42,4 +45,35 @@ private struct WebAdminMiddleware: AsyncMiddleware {
 
 private struct GameList: Codable {
     let games: [String]
+}
+
+private struct GameDetail: Codable {
+    let redLeader: String
+    let blueLeader: String
+    let redPlayers: [String]
+    let bluePlayers: [String]
+    let phase: String
+    let id: String
+    
+    init(state: Game.State) {
+        var redPlayers: [String] = []
+        var bluePlayers: [String] = []
+        
+        for player in state.teams[0].players {
+            redPlayers.append(player.name + " " + player.id)
+        }
+        for player in state.teams[1].players {
+            bluePlayers.append(player.name + " " + player.id)
+        }
+
+        let redLeaderObj = state.teams[0].leader
+        let blueLeaderObj = state.teams[1].leader
+        
+        self.redLeader = redLeaderObj?.id ?? "empty"
+        self.blueLeader = blueLeaderObj?.id ?? "empty"
+        self.redPlayers = redPlayers
+        self.bluePlayers = bluePlayers
+        self.phase = state.phase.rawValue
+        self.id = state.id
+    }
 }

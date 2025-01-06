@@ -4,6 +4,7 @@ func routes(_ app: Application) throws {
         
     try app.register(collection: FrontController())
     try app.register(collection: GameController())
+    try app.register(collection: DevController())
 }
 
 extension WebSocket {

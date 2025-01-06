@@ -7,7 +7,81 @@
     <link rel="icon" type="image/x-icon" href="/images/donna_3.jpg">
   </head>
   <body>
-    <h1>Enjoy</h1>
-    <img src="http://127.0.0.1:8080/images/pm.jpg" alt="Italian Trulli">
+    <h1>Gmame </h1>
+    <h1>#(id)</h1>
+    <input type="submit" value="add player" onclick="addPlayer('#(id)')"/>
+    <h2>Red Players</h2>
+        <h2>#(redLeader)</h2>
+        <input type="submit" value="add redLeader" onclick="addRedLeader('#(id)')"/>
+        <input type="submit" value="writeWord" onclick="writeWord('#(id)', '#(redLeader)')"/>
+        <ul>
+        #for(player in redPlayers):
+            <h3>#(player)</h3>
+        #endfor
+        </ul>
+    <h2>Blue Players</h2>
+        <h2>#(blueLeader)</h2>
+        <input type="submit" value="add blueLeader" onclick="addBlueLeader('#(id)')"/>
+        <input type="submit" value="writeWord" onclick="writeWord('#(id)', '#(blueLeader)')"/>
+        <ul>
+        #for(player in bluePlayers):
+            <h3>#(player)</h3>
+        #endfor
+        </ul>
+    <h2>Game Phase</h2>
+        <h3>#(phase)</h3>
   </body>
 </html>
+
+<script type="text/javascript">
+    function addPlayer(id) {
+        var xhr = new XMLHttpRequest();
+        xhr.onreadystatechange = function () {}
+        xhr.open('get', 'http://127.0.0.1:8080/api/dev/games/add/' + id, true);
+        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8');
+        xhr.send();
+        
+        location.reload(true);
+    }
+    
+    function addRedLeader(id) {
+        var xhr = new XMLHttpRequest();
+        xhr.onreadystatechange = function () {}
+        xhr.open('get', 'http://127.0.0.1:8080/api/dev/games/add/red/leader/' + id, true);
+        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8');
+        xhr.send();
+        
+        location.reload(true);
+    }
+    
+    function addBlueLeader(id) {
+        var xhr = new XMLHttpRequest();
+        xhr.onreadystatechange = function () {}
+        xhr.open('get', 'http://127.0.0.1:8080/api/dev/games/add/blue/leader/' + id, true);
+        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8');
+        xhr.send();
+        
+        location.reload(true);
+    }
+    
+    function writeWord(id, player) {
+        var xhr = new XMLHttpRequest();
+        xhr.onreadystatechange = function () {}
+        xhr.open('get', 'http://127.0.0.1:8080/api/dev/games/write/word/' + id + '?player=' + player, true);
+        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8');
+        xhr.send();
+        
+        location.reload(true);
+    }
+    
+    function selectWord(id, player, index) {
+        var xhr = new XMLHttpRequest();
+        xhr.onreadystatechange = function () {}
+        xhr.open('get', 'http://127.0.0.1:8080/api/dev/games/select/word/' + id + '?player=' + player, true);
+        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8');
+        xhr.send();
+        
+        location.reload(true);
+    }
+
+</script>

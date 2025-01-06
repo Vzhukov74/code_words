@@ -63,6 +63,11 @@ final class GameService: IGameService {
         return .ok
     }
     
+    func newStateFor(gameId: String, newState: Game.State) async {
+        guard let game = await gamesStore.game(by: gameId) else { return }
+        await game.new(state: newState)
+    }
+    
     func all() async throws -> [String] {
         await gamesStore.all()
     }

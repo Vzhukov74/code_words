@@ -16,6 +16,7 @@ protocol IGameService: Sendable {
     
     func all() async throws -> [String]
     func reset() async throws
+    func newStateFor(gameId: String, newState: Game.State) async
 }
 
 // MARK: - Storage
