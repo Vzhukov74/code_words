@@ -220,7 +220,7 @@ struct GameActionResolver {
         state.teams[teamIndex].votes = []
         state.words[wordIndex].isOpen = true
         
-        let hintIndex = state.teams[teamIndex].words.endIndex
+        let hintIndex = state.teams[teamIndex].words.endIndex - 1
         let color = state.words[wordIndex].color
         let colorIndex = color.index
         

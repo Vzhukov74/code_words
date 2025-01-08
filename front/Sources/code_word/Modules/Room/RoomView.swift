@@ -114,6 +114,7 @@ public struct RoomView: View {
                 words: state.words,
                 isOpen: isLeader,
                 canSelect: canSelect,
+                selected: prepareVotes(state),
                 onSelect: vm.onSelect(_:)
             )
                 .padding(.horizontal, 8)
@@ -132,6 +133,35 @@ public struct RoomView: View {
     }
     
     // MARK: Functions
+    
+    private func prepareVotes(_ state: GState) -> [Int: [Player]] {
+        func map(team: Team) -> [Int: [Player]] {
+            let players = team.players
+            let votes = team.votes
+            
+            var result: [Int: [Player]] = [:]
+            
+            for vote in votes {
+                if let player = players.first(where: { $0.id == vote.playerId }) {
+                    if result[vote.wordIndex] == nil {
+                        result[vote.wordIndex] = [player]
+                    } else {
+                        result[vote.wordIndex]?.append(player)
+                    }
+                }
+            }
+            
+            return result
+        }
+        
+        if state.phase == .red {
+            return map(team: state.teams[0])
+        } else if state.phase == .blue {
+            return map(team: state.teams[1])
+        } else {
+            return [:]
+        }
+    }
     
     private func prepare() {
         isLoading = true

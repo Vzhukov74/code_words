@@ -10,8 +10,8 @@ final class WordsPreparer: Sendable {
         var colors = colors()
         return words.indices.map { index in
             let word = words[index]
-            let index = (0..<colors.count).randomElement()!
-            let color = colors.remove(at: index)
+            let colorIndex = (0..<colors.count).randomElement()!
+            let color = colors.remove(at: colorIndex)
             return Game.Word(id: index, word: word, color: Game.WColor(rawValue: color)!)
         }
     }

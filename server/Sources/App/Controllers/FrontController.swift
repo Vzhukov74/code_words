@@ -52,6 +52,7 @@ private struct GameDetail: Codable {
     let blueLeader: String
     let redPlayers: [String]
     let bluePlayers: [String]
+    let wordsIndexes: [String]
     let phase: String
     let id: String
     
@@ -60,10 +61,10 @@ private struct GameDetail: Codable {
         var bluePlayers: [String] = []
         
         for player in state.teams[0].players {
-            redPlayers.append(player.name + " " + player.id)
+            redPlayers.append(player.id)
         }
         for player in state.teams[1].players {
-            bluePlayers.append(player.name + " " + player.id)
+            bluePlayers.append(player.id)
         }
 
         let redLeaderObj = state.teams[0].leader
@@ -74,6 +75,7 @@ private struct GameDetail: Codable {
         self.redPlayers = redPlayers
         self.bluePlayers = bluePlayers
         self.phase = state.phase.rawValue
+        self.wordsIndexes = (0..<25).compactMap { String($0) }
         self.id = state.id
     }
 }

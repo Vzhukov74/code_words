@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>mdlab</title>
-    <link rel="icon" type="image/x-icon" href="/images/donna_3.jpg">
+    <link rel="icon" type="image/x-icon" href="/images/icon.jpg">
   </head>
   <body>
     <h1>Current game list</h1>
@@ -23,11 +23,7 @@
 <script type="text/javascript">
     function reset() {
         var xhr = new XMLHttpRequest();
-        xhr.onreadystatechange = function () {
-            if (xhr.readyState === 4) {
-                alert(xhr.response);
-            }
-        }
+        xhr.onreadystatechange = function () {}
         xhr.open('get', 'http://127.0.0.1:8080/api/games/reset', true);
         xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8');
         xhr.send();

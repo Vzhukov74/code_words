@@ -4,32 +4,63 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>mdlab</title>
-    <link rel="icon" type="image/x-icon" href="/images/donna_3.jpg">
+    <link rel="icon" type="image/x-icon" href="../../images/donna_3.jpg">
+    <link rel="stylesheet" href="../../styles/cw_game.css">
   </head>
   <body>
-    <h1>Gmame </h1>
-    <h1>#(id)</h1>
-    <input type="submit" value="add player" onclick="addPlayer('#(id)')"/>
-    <h2>Red Players</h2>
-        <h2>#(redLeader)</h2>
-        <input type="submit" value="add redLeader" onclick="addRedLeader('#(id)')"/>
-        <input type="submit" value="writeWord" onclick="writeWord('#(id)', '#(redLeader)')"/>
-        <ul>
-        #for(player in redPlayers):
-            <h3>#(player)</h3>
-        #endfor
-        </ul>
-    <h2>Blue Players</h2>
-        <h2>#(blueLeader)</h2>
-        <input type="submit" value="add blueLeader" onclick="addBlueLeader('#(id)')"/>
-        <input type="submit" value="writeWord" onclick="writeWord('#(id)', '#(blueLeader)')"/>
-        <ul>
-        #for(player in bluePlayers):
-            <h3>#(player)</h3>
-        #endfor
-        </ul>
-    <h2>Game Phase</h2>
-        <h3>#(phase)</h3>
+    <h2>Game id -> #(id)</h2>
+    
+    <div class="row">
+        <div class="redcolumn">
+            <h3>Red Team</h3>
+            #if(redLeader != "empty"):
+                <h2>#(redLeader)</h2>
+                <input type="submit" value="Write Word" onclick="writeWord('#(id)', '#(redLeader)')"/>
+            #else:
+                <input type="submit" value="Add Leader" onclick="addRedLeader('#(id)')"/>
+            #endif
+            <h4>Players</h4>
+            <input type="submit" value="add player" onclick="addPlayer('#(id)')"/>
+            <ul>
+            #for(player in redPlayers):
+                <h5>#(player)</h5>
+                #if(phase == "red"):
+                    <h2>Select word by index</h2>
+                    #for(index in wordsIndexes):
+                        <input type="submit" value="#(index)" onclick="selectWord('#(id)', '#(player)', '#(index)')"/>
+                    #endfor
+                #endif
+            #endfor
+            </ul>
+        </div>
+        
+        <div class="bluecolumn">
+            <h3>Blue Team</h3>
+            #if(blueLeader != "empty"):
+                <h2>#(blueLeader)</h2>
+                <input type="submit" value="Write Word" onclick="writeWord('#(id)', '#(blueLeader)')"/>
+            #else:
+                <input type="submit" value="Add Leader" onclick="addBlueLeader('#(id)')"/>
+            #endif
+            <h4>Players</h4>
+            <input type="submit" value="add player" onclick="addPlayer('#(id)')"/>
+            <ul>
+            #for(player in bluePlayers):
+                <h5>#(player)</h5>
+                #if(phase == "blue"):
+                    <h2>Select word by index</h2>
+                    #for(index in wordsIndexes):
+                        <input type="submit" value="#(index)" onclick="selectWord('#(id)', '#(player)', '#(index)')"/>
+                    #endfor
+                #endif
+            #endfor
+            </ul>
+            
+        </div>
+    </div>
+        
+    <h3>Game Phase -> #(phase)</h3>
+
   </body>
 </html>
 
@@ -77,7 +108,7 @@
     function selectWord(id, player, index) {
         var xhr = new XMLHttpRequest();
         xhr.onreadystatechange = function () {}
-        xhr.open('get', 'http://127.0.0.1:8080/api/dev/games/select/word/' + id + '?player=' + player, true);
+        xhr.open('get', 'http://127.0.0.1:8080/api/dev/games/select/word/' + id + '?player=' + player + '&index=' + index, true);
         xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8');
         xhr.send();
         

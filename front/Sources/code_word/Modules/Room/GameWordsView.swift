@@ -12,6 +12,7 @@ struct GameWordsView: View {
     let words: [Word]
     let isOpen: Bool
     let canSelect: Bool
+    let selected: [Int: [Player]]
     let onSelect: (Word) -> Void
     
     let columns: [GridItem] = [
@@ -37,18 +38,43 @@ struct GameWordsView: View {
             .frame(height: 44)
             .background {
                 RoundedRectangle(cornerRadius: 8)
-                    .fill(.cyan)
+                    .fill(wordColor(word))
             }
             .onTapGesture { onSelect(word) }
-//            .overlay {
-//                VStack {
-//                    Spacer(minLength: 0)
-//                    HStack {
-//                        ForEach(word.elections, id: \.self) { player in
-//                            Text(player.name)
-//                        }
-//                    }
-//                }
-//            }
+            .overlay {
+                if let votes = selected[word.id], !votes.isEmpty {
+                    VStack {
+                        Spacer(minLength: 0)
+                        HStack {
+                            ForEach(votes, id: \.self) { player in
+                                Text(player.name)
+                            }
+                        }
+                    }
+                }
+            }
+    }
+    
+    private func wordColor(_ word: Word) -> Color {
+        if isOpen || word.isOpen {
+            return word.color.scolor
+        } else {
+            return .cyan
+        }
+    }
+}
+
+extension WColor {
+    var scolor: Color {
+        switch self {
+        case .gray:
+            return .gray
+        case .red:
+            return .red
+        case .blue:
+            return .blue
+        case .black:
+            return .black
+        }
     }
 }
