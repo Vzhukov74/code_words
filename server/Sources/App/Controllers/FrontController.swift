@@ -7,6 +7,8 @@
 
 import Vapor
 
+private let base: String = "https://mdlab.tech" // "http://127.0.0.1:8080"
+
 final class FrontController: RouteCollection {
     func boot(routes: any RoutesBuilder) throws {
         routes.get { req async throws in
@@ -17,7 +19,7 @@ final class FrontController: RouteCollection {
             group.group("games") { games in
                 games.get("list") { req async throws -> View in
                     let games = try await req.application.gameService.all()
-                    return try await req.view.render("cw_game_list", GameList(games: games))
+                    return try await req.view.render("cw_game_list", GameList(baseUrl: base, games: games))
                 }
                 games.get("detail", ":gameId") { req async throws -> View in
                     guard let id = req.parameters.get("gameId") else {
@@ -25,7 +27,7 @@ final class FrontController: RouteCollection {
                     }
                     let state = try await req.application.gameService.game(by: id)
                     
-                    return try await req.view.render("cw_game", GameDetail(state: state))
+                    return try await req.view.render("cw_game", GameDetail(state: state, baseUrl: base))
                 }
             }
         }
@@ -44,10 +46,12 @@ private struct WebAdminMiddleware: AsyncMiddleware {
 }
 
 private struct GameList: Codable {
+    let baseUrl: String
     let games: [String]
 }
 
 private struct GameDetail: Codable {
+    let baseUrl: String
     let redLeader: String
     let blueLeader: String
     let redPlayers: [String]
@@ -56,7 +60,7 @@ private struct GameDetail: Codable {
     let phase: String
     let id: String
     
-    init(state: Game.State) {
+    init(state: Game.State, baseUrl: String) {
         var redPlayers: [String] = []
         var bluePlayers: [String] = []
         
@@ -77,5 +81,6 @@ private struct GameDetail: Codable {
         self.phase = state.phase.rawValue
         self.wordsIndexes = (0..<25).compactMap { String($0) }
         self.id = state.id
+        self.baseUrl = baseUrl
     }
 }

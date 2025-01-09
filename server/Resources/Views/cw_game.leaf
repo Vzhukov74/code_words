@@ -15,19 +15,19 @@
             <h3>Red Team</h3>
             #if(redLeader != "empty"):
                 <h2>#(redLeader)</h2>
-                <input type="submit" value="Write Word" onclick="writeWord('#(id)', '#(redLeader)')"/>
+                <input type="submit" value="Write Word" onclick="writeWord('#(baseUrl)', '#(id)', '#(redLeader)')"/>
             #else:
-                <input type="submit" value="Add Leader" onclick="addRedLeader('#(id)')"/>
+                <input type="submit" value="Add Leader" onclick="addRedLeader('#(baseUrl)', '#(id)')"/>
             #endif
             <h4>Players</h4>
-            <input type="submit" value="add player" onclick="addPlayer('#(id)')"/>
+            <input type="submit" value="add player" onclick="addPlayer('#(baseUrl)', '#(id)')"/>
             <ul>
             #for(player in redPlayers):
                 <h5>#(player)</h5>
                 #if(phase == "red"):
                     <h2>Select word by index</h2>
                     #for(index in wordsIndexes):
-                        <input type="submit" value="#(index)" onclick="selectWord('#(id)', '#(player)', '#(index)')"/>
+                        <input type="submit" value="#(index)" onclick="selectWord('#(baseUrl)', '#(id)', '#(player)', '#(index)')"/>
                     #endfor
                 #endif
             #endfor
@@ -38,19 +38,19 @@
             <h3>Blue Team</h3>
             #if(blueLeader != "empty"):
                 <h2>#(blueLeader)</h2>
-                <input type="submit" value="Write Word" onclick="writeWord('#(id)', '#(blueLeader)')"/>
+                <input type="submit" value="Write Word" onclick="writeWord('#(baseUrl)', '#(id)', '#(blueLeader)')"/>
             #else:
-                <input type="submit" value="Add Leader" onclick="addBlueLeader('#(id)')"/>
+                <input type="submit" value="Add Leader" onclick="addBlueLeader('#(baseUrl)', '#(id)')"/>
             #endif
             <h4>Players</h4>
-            <input type="submit" value="add player" onclick="addPlayer('#(id)')"/>
+            <input type="submit" value="add player" onclick="addPlayer('#(baseUrl)', '#(id)')"/>
             <ul>
             #for(player in bluePlayers):
                 <h5>#(player)</h5>
                 #if(phase == "blue"):
                     <h2>Select word by index</h2>
                     #for(index in wordsIndexes):
-                        <input type="submit" value="#(index)" onclick="selectWord('#(id)', '#(player)', '#(index)')"/>
+                        <input type="submit" value="#(index)" onclick="selectWord('#(baseUrl)', '#(id)', '#(player)', '#(index)')"/>
                     #endfor
                 #endif
             #endfor
@@ -65,50 +65,50 @@
 </html>
 
 <script type="text/javascript">
-    function addPlayer(id) {
+    function addPlayer(base, id) {
         var xhr = new XMLHttpRequest();
         xhr.onreadystatechange = function () {}
-        xhr.open('get', 'http://127.0.0.1:8080/api/dev/games/add/' + id, true);
+        xhr.open('get', base + '/api/dev/games/add/' + id, true);
         xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8');
         xhr.send();
         
         location.reload(true);
     }
     
-    function addRedLeader(id) {
+    function addRedLeader(base, id) {
         var xhr = new XMLHttpRequest();
         xhr.onreadystatechange = function () {}
-        xhr.open('get', 'http://127.0.0.1:8080/api/dev/games/add/red/leader/' + id, true);
+        xhr.open('get', base + '/api/dev/games/add/red/leader/' + id, true);
         xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8');
         xhr.send();
         
         location.reload(true);
     }
     
-    function addBlueLeader(id) {
+    function addBlueLeader(base, id) {
         var xhr = new XMLHttpRequest();
         xhr.onreadystatechange = function () {}
-        xhr.open('get', 'http://127.0.0.1:8080/api/dev/games/add/blue/leader/' + id, true);
+        xhr.open('get', base + '/api/dev/games/add/blue/leader/' + id, true);
         xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8');
         xhr.send();
         
         location.reload(true);
     }
     
-    function writeWord(id, player) {
+    function writeWord(base, id, player) {
         var xhr = new XMLHttpRequest();
         xhr.onreadystatechange = function () {}
-        xhr.open('get', 'http://127.0.0.1:8080/api/dev/games/write/word/' + id + '?player=' + player, true);
+        xhr.open('get', base + '/api/dev/games/write/word/' + id + '?player=' + player, true);
         xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8');
         xhr.send();
         
         location.reload(true);
     }
     
-    function selectWord(id, player, index) {
+    function selectWord(base, id, player, index) {
         var xhr = new XMLHttpRequest();
         xhr.onreadystatechange = function () {}
-        xhr.open('get', 'http://127.0.0.1:8080/api/dev/games/select/word/' + id + '?player=' + player + '&index=' + index, true);
+        xhr.open('get', base + '/api/dev/games/select/word/' + id + '?player=' + player + '&index=' + index, true);
         xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8');
         xhr.send();
         
