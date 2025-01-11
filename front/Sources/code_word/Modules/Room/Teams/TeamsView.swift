@@ -7,32 +7,6 @@
 
 import SwiftUI
 
-struct TeamsBgColors: View {
-    var body: some View {
-        HStack(spacing: 0) {
-            AppColor.red
-                .frame(maxWidth: .infinity)
-            AppColor.blue
-                .frame(maxWidth: .infinity)
-        }
-    }
-}
-
-struct TeamsStaticView: View {
-    let state: GState
-    
-    var body: some View {
-        TeamsView(
-            state: state,
-            onBecameRedLeader: {},
-            onJoinRed: {},
-            onBecameBlueLeader: {},
-            onJoinBlue: {},
-            isStatic: true
-        )
-    }
-}
-
 struct TeamsView: View {
     
     let state: GState
@@ -44,11 +18,12 @@ struct TeamsView: View {
     let isStatic: Bool
     
     var body: some View {
-        HStack(spacing: 0) {
+        HStack(alignment: .top, spacing: 0) {
             VStack(alignment: .leading) {
                 TeamView(
                     team: state.teams[0], // red team
                     isStatic: isStatic,
+                    isNeedSelectLastWord: state.phase == .red,
                     onBecameLeader: onBecameRedLeader,
                     onJoin: onJoinRed
                 )
@@ -60,6 +35,7 @@ struct TeamsView: View {
                 TeamView(
                     team: state.teams[1], // red team
                     isStatic: isStatic,
+                    isNeedSelectLastWord: state.phase == .blue,
                     onBecameLeader: onBecameBlueLeader,
                     onJoin: onJoinBlue
                 )
@@ -75,37 +51,19 @@ struct TeamsView: View {
     }
 }
 
-private struct TeamView: View {
-    
-    let team: Team
-    let isStatic: Bool
-    let onBecameLeader: () -> Void
-    let onJoin: () -> Void
+// Helper
+
+struct TeamsStaticView: View {
+    let state: GState
     
     var body: some View {
-        VStack(spacing: 8) {
-            leaderView
-            Divider()
-            ForEach(team.players, id: \.self) { player in
-                PlayerView(player: player)
-            }
-            if !isStatic {
-                Divider()
-                Button(action: onJoin) {
-                    Text("join")
-                }
-            }
-        }
-    }
-    
-    @ViewBuilder
-    private var leaderView: some View {
-        if team.leader != nil || isStatic {
-            PlayerView(player: team.leader ?? Player(id: "", name: "oops no leader!", icon: nil))
-        } else {
-            Button(action: { onBecameLeader() }) {
-                Text("became a team master")
-            }
-        }
+        TeamsView(
+            state: state,
+            onBecameRedLeader: {},
+            onJoinRed: {},
+            onBecameBlueLeader: {},
+            onJoinBlue: {},
+            isStatic: true
+        )
     }
 }

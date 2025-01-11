@@ -11,6 +11,7 @@ final class RoomViewModel: ObservableObject {
         
     let leaderHitnInputVM: LeaderHitnInputViewModel
     
+    private let navigation: Navigation
     private let network: Network
     private let cmdService: CmdService
     private let roomId: String
@@ -18,12 +19,17 @@ final class RoomViewModel: ObservableObject {
     
     private var onNewState: ((GState) -> Void)?
     
-    init(network: Network, cmdService: CmdService, roomId: String, user: User) {
+    init(navigation: Navigation, network: Network, cmdService: CmdService, roomId: String, user: User) {
+        self.navigation = navigation
         self.network = network
         self.cmdService = cmdService
         self.roomId = roomId
         self.user = user
         self.leaderHitnInputVM = LeaderHitnInputViewModel(cmdService: cmdService)
+    }
+    
+    func onBack() {
+        navigation.back()
     }
 
     func start(onNewState: ((GState) -> Void)?) async throws -> GState {

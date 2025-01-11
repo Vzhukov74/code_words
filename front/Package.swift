@@ -16,7 +16,7 @@ if hasSkip {
     package = Package(
         name: "project-name",
         defaultLocalization: "en",
-        platforms: [.iOS(.v16), .macOS(.v13), .macCatalyst(.v16)],
+        platforms: [.iOS(.v17), .macOS(.v13), .macCatalyst(.v16)],
         products: [
             .library(name: "code_wordApp", type: .dynamic, targets: ["code_word"]),
         ],
@@ -33,7 +33,7 @@ if hasSkip {
     package = Package(
         name: "project-name",
         defaultLocalization: "en",
-        platforms: [.iOS(.v16), .macOS(.v13), .macCatalyst(.v16)],
+        platforms: [.iOS(.v17), .macOS(.v13), .macCatalyst(.v16)],
         products: [
             .library(name: "code_wordApp", type: .dynamic, targets: ["code_word"]),
         ],

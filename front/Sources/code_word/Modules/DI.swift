@@ -31,6 +31,7 @@ final class DI {
     
     func roomViewModel() -> RoomViewModel {
         RoomViewModel(
+            navigation: navigation,
             network: network,
             cmdService: CmdService(socketService: socketService),
             roomId: roomId!,

@@ -10,6 +10,7 @@ import SwiftUI
 struct PlayerView: View {
     
     let player: Player
+    let hasVote: Bool
     
     var body: some View {
         HStack(spacing: 6) {
@@ -17,7 +18,7 @@ struct PlayerView: View {
                 PlayerAvatars.image(by: player.icon!)
                     .resizable()
                     .aspectRatio(contentMode: .fit)
-                    .foregroundStyle(Color.red)
+                    .foregroundStyle(hasVote ? AppColor.main : Color.black)
                     .frame(width: 20, height: 20)
             }
             

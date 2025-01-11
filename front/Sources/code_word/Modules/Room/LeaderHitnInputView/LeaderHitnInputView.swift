@@ -12,9 +12,9 @@ struct LeaderHitnInputView: View {
     @StateObject var vm: LeaderHitnInputViewModel
     
     var body: some View {
-        HStack {
+        HStack(spacing: 8) {
             VStack(spacing: 8) {
-                TextField("", text: $vm.text)
+                TextField("введите слово", text: $vm.text)
                 HStack(spacing: 8) {
                     ForEach(1...9, id: \.self) { number in
                         NumberButton(
@@ -29,7 +29,7 @@ struct LeaderHitnInputView: View {
             Button(action: { vm.onHint() }) {
                 Image("enter", bundle: .module)
                     .resizable()
-                    .frame(width: 56, height: 80)
+                    .frame(width: 46, height: 66)
             }
             .disabled(!vm.isSendActive)
             .frame(width: 56)

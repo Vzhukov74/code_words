@@ -4,7 +4,20 @@
     "" : {
 
     },
+    "%@ %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ %2$lld"
+          }
+        }
+      }
+    },
     "%lld" : {
+
+    },
+    "9" : {
 
     },
     "123" : {
@@ -190,9 +203,6 @@
         }
       }
     },
-    "menu" : {
-
-    },
     "Name" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -366,6 +376,9 @@
           }
         }
       }
+    },
+    "введите слово" : {
+
     },
     "Готово" : {
 

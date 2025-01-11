@@ -22,6 +22,18 @@ public struct RoomView: View {
         state.teams[1].leader?.id == vm.user.id
     }
     
+    private var hasHintInput: Bool {
+        guard let state else { return false }
+        
+        if state.teams[0].leader?.id == vm.user.id && state.phase == .redLeader {
+            return true
+        } else if state.teams[1].leader?.id == vm.user.id && state.phase == .blueLeader {
+            return true
+        } else {
+            return false
+        }
+    }
+    
     private var canSelect: Bool {
         guard let state else { return false }
         guard state.phase == .red ||  state.phase == .blue else { return false }
@@ -64,10 +76,31 @@ public struct RoomView: View {
     }
     
     private var headerView: some View {
-        HStack {
-            Spacer(minLength: 0)
-            Button(action: { vm.startGame() }) {
-                Text("menu")
+        ZStack {
+            Text(state?.phase.title ?? "")
+                .font(.system(size: 18))
+                .fontWeight(.semibold)
+                .foregroundStyle(.black)
+            HStack {
+                Button(action: vm.onBack) {
+                    Image("chevron", bundle: .module)
+                        .resizable()
+                        .scaledToFit()
+                        .foregroundStyle(AppColor.main)
+                        .frame(width: 24, height: 24)
+                        .offset(x: -10)
+                }
+                .frame(width: 44, height: 44)
+                Spacer(minLength: 0)
+                Button(action: { vm.startGame() }) {
+                    Image("action", bundle: .module)
+                        .resizable()
+                        .scaledToFit()
+                        .foregroundStyle(AppColor.main)
+                        .frame(width: 24)
+                        .offset(x: 10)
+                }
+                .frame(width: 44, height: 44)
             }
         }
             .frame(height: 44)
@@ -89,6 +122,7 @@ public struct RoomView: View {
     private func gameIdle(_ state: GState) -> some View {
         VStack(spacing: 0) {
             headerView
+                .padding(.bottom, 10)
             RoomGameIdle(
                 state: state,
                 isHost: true,
@@ -105,10 +139,12 @@ public struct RoomView: View {
     private func game(_ state: GState) -> some View {
         VStack(spacing: 0) {
             headerView
+                .padding(.bottom, 10)
             TeamsStaticView(
                 state: state
             )
             hintInput(state)
+                .padding(.top, 12)
             Spacer()
             GameWordsView(
                 words: state.words,
@@ -124,7 +160,7 @@ public struct RoomView: View {
     
     @ViewBuilder
     private func hintInput(_ state: GState) -> some View {
-        if (state.phase == .redLeader || state.phase == .blueLeader), isLeader {
+        if hasHintInput {
             LeaderHitnInputView(vm: vm.leaderHitnInputVM)
                 .padding(.horizontal, 8)
         } else {
@@ -176,114 +212,16 @@ public struct RoomView: View {
     }
 }
 
-final class CmdService {
-    enum Cmd {
-        case start(String)
-        case joinTeam(String)
-        case becameTeamLeader(String)
-        case selectWord(String)
-        case writeDownWord(String, String)
-        case endTurn
-        case restart
-        
-        var cmd: String {
-            switch self {
-            case let .start(dictionary): return "start:\(dictionary)"
-            case let .joinTeam(team): return "joinTeam:\(team)"
-            case let .becameTeamLeader(team): return "becameTeamLeader:\(team)"
-            case let .selectWord(wordIndex): return "selectWord:\(wordIndex)"
-            case let .writeDownWord(word, number): return "writeDownWord:\(word):\(number)"
-            case .endTurn: return "endTurn"
-            case .restart: return "restart"
-            }
+private extension Phase {
+    var title: String {
+        switch self {
+        case .idle: return "Собираем команды"
+        case .redLeader: return "Красные загадывают слово"
+        case .red: return "Ходят красные"
+        case .blueLeader: return "Синие загадывают слово"
+        case .blue: return "Ходят синие"
+        case .endRed: return "Победа красных"
+        case .endBlue: return "Победа синих"
         }
-        
-        init?(rawValue: String) {
-            let split = rawValue.split(separator: ":")
-            guard split.count > 0 else { return nil }
-            
-            let cmdStr = String(split[0])
-            let data1: String? = split.count >= 2 ? String(split[1]) : nil
-            let data2: String? = split.count >= 3 ? String(split[1]) : nil
-            
-            switch cmdStr {
-            case "start":
-                guard let data1 else { return nil }
-                self = .start(data1)
-            case "joinTeam":
-                guard let data1 else { return nil }
-                self = .joinTeam(data1)
-            case "becameTeamLeader":
-                guard let data1 else { return nil }
-                self = .becameTeamLeader(data1)
-            case "selectWord":
-                guard let data1 else { return nil }
-                self = .selectWord(data1)
-            case "writeDownWord":
-                guard let data1, let data2 else { return nil }
-                self = .writeDownWord(data1, data2)
-            case "endTurn":
-                self = .endTurn
-            case "restart":
-                self = .restart
-            default:
-                return nil
-            }
-        }
-    }
-    
-    private let socketService: SocketService
-    private var userId: String!
-    private var onCmd: ((GState) -> Void)!
-    
-    init(socketService: SocketService) {
-        self.socketService = socketService
-    }
-    
-    func start(gameId: String, userId: String, onCmd: @escaping (GState) -> Void) {
-        self.userId = userId
-        self.onCmd = onCmd
-        socketService.connect(to: gameId, userId: userId, onReceive: onReceive)
-    }
-    
-    func startGame() {
-        socketService.send(msg: Cmd.start("temp").cmd)
-    }
-    
-    func onBecameRedLeader() {
-        socketService.send(msg: Cmd.becameTeamLeader("red").cmd)
-    }
-
-    func onJoinRed() {
-        socketService.send(msg: Cmd.joinTeam("red").cmd)
-    }
-
-    func onBecameBlueLeader() {
-        socketService.send(msg: Cmd.becameTeamLeader("blue").cmd)
-    }
-
-    func onJoinBlue() {
-        socketService.send(msg: Cmd.joinTeam("blue").cmd)
-    }
-    
-    func selectWord(wordIndex: String) {
-        socketService.send(msg: Cmd.selectWord(wordIndex).cmd)
-    }
-    
-    func writeDownWord(word: String, number: Int) {
-        socketService.send(msg: Cmd.writeDownWord(word, "\(number)").cmd)
-    }
-    
-    func onEndTurn() {
-        socketService.send(msg: Cmd.endTurn.cmd)
-    }
-    
-    private func onReceive(_ msg: String) {
-
-    }
-    
-    private func onReceive(_ data: Data) {
-        guard let newState = try? JSONDecoder().decode(GState.self, from: data) else { return }
-        onCmd(newState)
     }
 }

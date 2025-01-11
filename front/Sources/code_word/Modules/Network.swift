@@ -44,7 +44,7 @@ struct Vote: Codable {
     let wordIndex: Int
 }
 
-struct Hint: Codable {
+struct Hint: Codable, Hashable {
     let word: String
     let number: Int
     var numberOfOpenWords: Int
