@@ -7,10 +7,12 @@ struct MainView: View {
     
     // Android can work with AppStorage only in view context (yeap, android it is shit)
     @AppStorage("app.vz.code.word.user.name.key") private var userNameCache: String = ""
+    @AppStorage("app.vz.code.word.last.game.id.key") private var lastGameIdCache: String = ""
     @AppStorage("app.vz.code.word.user.icon.key") private var userIconCache: Int = 0
     
     @State var isLoading: Bool = false
     @State var error: String = ""
+    @State var roomId: String = ""
     
     var body: some View {
         VStack {
@@ -19,7 +21,10 @@ struct MainView: View {
             btnsView
                 .padding(.bottom, 36)
         }
-        .onAppear { userModel() }
+        .onAppear { onAppear() }
+        .onOpenURL { url in
+            handleURL(url: url)
+        }
     }
     
     private var headerView: some View {
@@ -61,13 +66,28 @@ struct MainView: View {
                 }
             }
             
-            AppMainButton(
-                title: "Присоедениться",
-                action: { joinToRoom() },
-                color: AppColor.blue
-            )
+            if !roomId.isEmpty {
+                AppMainButton(
+                    title: "Вернуться",
+                    action: { joinToRoom(id: roomId) },
+                    color: AppColor.blue
+                )
+            }
         }
         .padding(.horizontal, 16)
+    }
+    
+    private func onAppear() {
+        userModel()
+        if !lastGameIdCache.isEmpty {
+            Task { @MainActor in
+                if await vm.hasGame(id: lastGameIdCache) {
+                    roomId = lastGameIdCache
+                } else {
+                    roomId = ""
+                }
+            }
+        }
     }
     
     private func createRoom() {
@@ -75,8 +95,9 @@ struct MainView: View {
             isLoading = true
             userModel()
             do {
-                try await vm.createAndJoinRoom(with: DI.shared.user!)
+                let gameId = try await vm.createRoom(with: DI.shared.user!)
                 isLoading = false
+                joinToRoom(id: gameId)
             } catch {
                 isLoading = false
                 print(error.localizedDescription)
@@ -101,9 +122,10 @@ struct MainView: View {
         DI.shared.user = user
     }
     
-    private func joinToRoom() {
+    private func joinToRoom(id: String) {
         userModel()
-        vm.joinToRoom(id: "newgame", with: DI.shared.user!)
+        lastGameIdCache = id
+        vm.joinToRoom(id: id, with: DI.shared.user!)
     }
     
     private func showError() {
@@ -112,5 +134,10 @@ struct MainView: View {
             try? await Task.sleep(nanoseconds: 5_000_000_000)
             error = ""
         }
+    }
+    
+    private func handleURL(url: URL) {
+        guard let gameId = url.pathComponents.last else { return }
+        joinToRoom(id: gameId)
     }
 }

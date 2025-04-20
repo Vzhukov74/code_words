@@ -18,20 +18,25 @@ final class MainViewModel: ObservableObject {
         self.network = network
     }
     
-    func createAndJoinRoom(with user: User) async throws {
-        let roomId = try await network.createRoom(with: user)
-        DI.shared.roomId = roomId
-        DI.shared.user = user
-        
-        Task { @MainActor in
-            joinToRoom(id: roomId, with: user)
+    func createRoom(with user: User) async throws -> String {
+        try await network.createRoom(with: user)
+    }
+    
+    func hasGame(id: String) async -> Bool {
+        do {
+            _ = try await network.game(by: id)
+            return true
+        } catch {
+            return false
         }
     }
     
     func joinToRoom(id: String, with user: User) {
         DI.shared.roomId = id
         DI.shared.user = user
-        navigation.joinToRoom()
+        Task { @MainActor in
+            navigation.joinToRoom()
+        }
     }
     
     func configureUser() {

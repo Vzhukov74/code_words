@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>mdlab</title>
+    <link rel="icon" type="image/x-icon" href="/images/icon.jpg">
+    <!-- Include jsSHA library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsSHA/3.3.1/sha.min.js"></script>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+        .auth-content {
+            text-align: center;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            //marging-bottom: 24px;
+        }
+        .auth-fields {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0 25px 0 0;
+        }
+        input[type="text"] {
+            color: white;
+            border: none;
+            padding: 10px;
+            margin: 5px 0 10px 0; /* Top, right and left margins are 0. Bottom margin is set to 10px */
+            border-radius: 10px;
+            width: 200px; /* Set a fixed width or adjust as needed */
+        }
+        button {
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+    </style>
+  </head>
+  <body>
+    <div class="auth-content">
+        <div class="auth-fields">
+            <input type="text" id="field1" placeholder="login">
+            <input type="text" id="field2" placeholder="password">
+            <button onclick="submit()">login</button>
+        </div>
+    </div>
+    </div>
+    <script>
+        function submit() {
+            const login = document.getElementById('field1').value;
+            const password = document.getElementById('field2').value;
+            
+            var xhr = new XMLHttpRequest();
+            xhr.onreadystatechange = function () {}
+            
+            var jsonData = {
+                login: login,
+                password: hashPassword(password)
+            };
+            var jsonString = JSON.stringify(jsonData);
+                        
+            xhr.open('post', 'http://127.0.0.1:8080' + '/auth/login', true);
+            xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8');
+            xhr.send(jsonString);
+        }
+                      
+        function hashPassword(password) {
+            var sha = new jsSHA("SHA-256", "TEXT");
+            sha.update(password);
+            return sha.getHash("HEX");
+        }
+    </script>
+  </body>
+</html>

@@ -23,7 +23,7 @@ struct WordCard: View {
             .fontWeight(.regular)
             .frame(maxWidth: .infinity, alignment: .center)
             .frame(height: 44)
-            .foregroundStyle(word.color == .black ? .white : .black)
+            .foregroundStyle(labelColor(for: word))
             .background {
                 RoundedRectangle(cornerRadius: 8)
                     .fill(wordColor(word))
@@ -60,6 +60,13 @@ struct WordCard: View {
         } else {
             return .gray
         }
+    }
+    
+    private func labelColor(for word: Word) -> Color {
+        if (isOpen || word.isOpen) && word.color == .black {
+            return .white
+        }
+        return .black
     }
 }
 

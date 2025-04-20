@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>mdlab</title>
+    <link rel="icon" type="image/x-icon" href="/images/icon.jpg">
+<style>
+    body {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+        background-color: #FFFFFF;
+    }
+    
+    .container-add-challenge {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch; /* This ensures all children take up full width */
+        gap: 12px; /* Space between each child element */
+        padding: 20px;
+        border-radius: 10px; /* Rounded corners */
+        background-color: #efedf4; /* Red background color */
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .container {
+        display: flex;
+        flex-direction: row;
+        align-items: stretch; /* This ensures all children take up full width */
+        gap: 24px; /* Space between each child element */
+        padding: 20px;
+        border-radius: 10px; /* Rounded corners */
+        background-color: #ffffff; /* Red background color */
+    }
+
+    .container-challenges {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch; /* This ensures all children take up full width */
+        gap: 12px; /* Space between each child element */
+        padding: 20px;
+        border-radius: 10px; /* Rounded corners */
+        background-color: #efedf4; /* Red background color */
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        overflow-y: auto; /* Enables vertical scrolling */
+        max-height: calc(100vh - 300px);;
+    }
+
+    .container-challenge {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch; /* This ensures all children take up full width */
+        gap: 6px; /* Space between each child element */
+        padding: 10px;
+    }
+
+    .input-week {
+        padding: 10px;
+        border: 1px solid #FF7530;
+        border-radius: 5px;
+    }
+    
+    .input-field {
+        padding: 10px;
+        border: 1px solid #FF7530;
+        border-radius: 5px;
+        min-height: 200px;
+    }
+    
+    button {
+        padding: 10px;
+        background-color: #FF7530;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+</style>
+  </head>
+  <body>
+    <div class="container">
+        <div class="container-add-challenge">
+            <h2>Add challenge for year #(year):</h2>
+            <input type="text" class="input-week" id="week" placeholder="week number">
+            <textarea class="input-field" id="challenge" placeholder="add challenge"></textarea>
+            <button onclick="submit('#(year)')">Add</button>
+        </div>
+        <div class="container-challenges">
+            #for(game in challenges):
+                <div class="container-challenge">
+                    <h5>#(game.week)</h5>
+                    <h6>#(game.challenge)</h6>
+                </div>
+            #endfor
+        </div>
+    </div>
+    <script>
+        function submit(year) {
+            const week = document.getElementById('week').value;
+            const challenge = document.getElementById('challenge').value;
+            
+            var xhr = new XMLHttpRequest();
+            xhr.onreadystatechange = function () {}
+            
+            var jsonData = {
+                id: year + "_" + week,
+                challenge: challenge,
+                year: parseInt(year),
+                week: parseInt(week)
+            };
+            var jsonString = JSON.stringify(jsonData);
+      
+      
+            xhr.open('post', 'http://127.0.0.1:8080' + '/solitaire/challenge', true);
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            xhr.send(jsonString);
+                      
+                      location.reload(true);
+        }
+    </script>
+  </body>
+</html>
