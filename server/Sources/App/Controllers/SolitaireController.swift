@@ -29,12 +29,12 @@ actor SolitaireController: RouteCollection {
             route.get("place", ":id", use: place)
             route.post("result", use: uploadResult)
 
-            //let secure = route.grouped(SessionToken.authenticator(), SessionToken.guardMiddleware())
+            let secure = route.grouped(AdminMiddleware())
             
-            route.get("challenges", use: challengesList)
-            route.post("challenge", use: setupChallenge)
+            secure.get("challenges", use: challengesList)
+            secure.post("challenge", use: setupChallenge)
             
-            route.get("editor" , ":year", use: challengesEditor)
+            secure.get("editor" , ":year", use: challengesEditor)
         }
     }
 
@@ -58,9 +58,7 @@ actor SolitaireController: RouteCollection {
         return game
     }
     
-    @Sendable private func leadersSheet(req: Request) async throws -> LeadersSheet {
-        guard let id = req.parameters.get("id") else { throw Abort(.badRequest) }
-        
+    @Sendable private func leadersSheet(req: Request) async throws -> LeadersSheet {        
         return try await fetchLeadersSheet(req: req)
     }
     
@@ -97,9 +95,6 @@ actor SolitaireController: RouteCollection {
     // MARK: private routes
     
     @Sendable private func challengesList(req: Request) async throws -> [SolitaireGame] {
-//        let sessionToken = try req.auth.require(SessionToken.self)
-//        print(sessionToken.userId)
-        
         let yearNumber = try await req.application.getYearNumber()
         
         let games = try await SolitaireGame.query(on: req.db)

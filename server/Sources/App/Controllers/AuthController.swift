@@ -13,7 +13,7 @@ actor AuthController: RouteCollection {
         let password: String
     }
     
-    private let password = "a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3"
+    let password = Environment.get("PASSWORD") ?? ""
     
     nonisolated func boot(routes: any RoutesBuilder) throws {
         routes.group("auth") { route in
@@ -31,6 +31,10 @@ actor AuthController: RouteCollection {
         guard loginData.password == password else { throw Abort(.badRequest) }
         
         let payload = SessionToken(userId: loginData.login)
-        return ClientTokenResponse(token: try await req.jwt.sign(payload))
+        let token = try await req.jwt.sign(payload)
+        
+        try await req.redis.set("app.solitaire.auth.key", toJSON: token)
+
+        return ClientTokenResponse(token: token)
     }
 }

@@ -12,13 +12,24 @@ public func configure(_ app: Application) async throws {
     app.middleware.use(FileMiddleware(publicDirectory: app.directory.publicDirectory))
     app.views.use(.leaf)
 
-    app.databases.use(.sqlite(.memory), as: .sqlite)
+    // TODO: install sqlite3 locally or switch on postgress or mangoDB
+    
+    if Environment.get("APP_ENV") ?? "" == "prod" {
+        let sqlFilePath = Environment.get("DB_NAME") ?? ""
+        app.databases.use(.sqlite(.file("/data/\(sqlFilePath)")), as: .sqlite)
+    } else {
+        app.databases.use(.sqlite(.memory), as: .sqlite)
+    }
+    
     app.migrations.add(CreateSolitaireGame())
     app.migrations.add(CreateSolitaireResult())
     try await app.autoMigrate()
+        
+    let evnRedisUrl = Environment.get("REDIS_URL") ?? "redis://127.0.0.1:6379"
+    let redisConfiguration = try RedisConfiguration(url: evnRedisUrl, pool: .init(connectionRetryTimeout: .seconds(5)))
     
-    app.redis.configuration = try RedisConfiguration(hostname: "redis://127.0.0.1", port: 6379)
-    try app.queues.use(.redis(url: "redis://127.0.0.1:6379"))
+    app.redis.configuration = redisConfiguration
+    app.queues.use(.redis(redisConfiguration))
 
     try await SolitaireWeekAndYearNumberJob.setupWeekAndYearNumber(for: app)
     

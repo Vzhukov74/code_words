@@ -31,7 +31,7 @@
             margin: 0 25px 0 0;
         }
         input[type="text"] {
-            color: white;
+            color: black;
             border: none;
             padding: 10px;
             margin: 5px 0 10px 0; /* Top, right and left margins are 0. Bottom margin is set to 10px */
@@ -62,7 +62,14 @@
             const password = document.getElementById('field2').value;
             
             var xhr = new XMLHttpRequest();
-            xhr.onreadystatechange = function () {}
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4) {
+                    var jsonResponse = JSON.parse(xhr.responseText);
+                    var value = jsonResponse.token
+                    
+                    document.cookie="auth=" + value + ";path=/";
+                }
+            }
             
             var jsonData = {
                 login: login,
