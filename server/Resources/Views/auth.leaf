@@ -57,29 +57,30 @@
     </div>
     </div>
     <script>
-        function submit() {
+        async function submit() {
             const login = document.getElementById('field1').value;
             const password = document.getElementById('field2').value;
             
-            var xhr = new XMLHttpRequest();
-            xhr.onreadystatechange = function () {
-                if (xhr.readyState === 4) {
-                    var jsonResponse = JSON.parse(xhr.responseText);
-                    var value = jsonResponse.token
-                    
-                    document.cookie="auth=" + value + ";path=/";
-                }
-            }
-            
-            var jsonData = {
+            let dto = {
                 login: login,
                 password: hashPassword(password)
             };
-            var jsonString = JSON.stringify(jsonData);
-                        
-            xhr.open('post', 'http://127.0.0.1:8080' + '/auth/login', true);
-            xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8');
-            xhr.send(jsonString);
+            var json = JSON.stringify(dto);
+            
+            let url = window.location.href
+
+            let request = new XMLHttpRequest();
+            request.open('post', url + '/login');
+            request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8');
+            
+            request.onload = function () {
+                if (request.readyState === 4) {
+                    let response = JSON.parse(request.responseText);
+                    document.cookie="auth=" + response.token + ";path=/";
+                }
+            }
+            
+            request.send(json);
         }
                       
         function hashPassword(password) {
