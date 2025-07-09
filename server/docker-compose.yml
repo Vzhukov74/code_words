@@ -5,7 +5,7 @@ x-shared_environment: &shared_environment
   REDIS_URL: redis://redis:6379
   REDIS_HOST: redis
   REDIS_PORT: 6379
-  PASSWORD: 
+  PASSWORD: 99e869389982e8169a65bc60c3cb07b9fa0f9d22ae4e58b15428eaea91895977
   
 services:
   app:
@@ -14,6 +14,8 @@ services:
     build:
       context: .
       dockerfile: ./Dockerfile
+      platforms:
+        - "linux/amd64"
     environment:
       <<: *shared_environment
     ports:

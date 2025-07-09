@@ -1,0 +1,92 @@
+<!-- Resources/Views/challenges.leaf -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Challenges</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        h1 { color: #333; }
+        .today { font-weight: bold; color: #0066cc; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background-color: #f2f2f2; }
+        form { margin-top: 30px; background: #f9f9f9; padding: 20px; border-radius: 5px; }
+        input, button { padding: 8px; margin: 5px 0; }
+        input[type="text"] { width: 70%; }
+    </style>
+</head>
+<body>
+    <h1>Challenges for #(year)</h1>
+    
+    <div style="margin-bottom: 20px;">
+        <button onclick="generateTestData()" style="padding: 8px 15px; background-color: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer;">
+            Generate Test Data
+        </button>
+    </div>
+                        
+    <table>
+        <thead>
+            <tr>
+                <th>Day</th>
+                <th>Challenge</th>
+                <th>Created At</th>
+            </tr>
+        </thead>
+        <tbody>
+            #for(challenge in challenges) {
+                <tr #if(challenge.isToday) { class="today" }>
+                    <td>#(challenge.day)</td>
+                    <td>#(challenge.text)</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    
+    <form id="addChallengeForm">
+        <h2>Add New Challenge</h2>
+        <input type="text" id="challengeText" placeholder="Enter challenge text" required>
+        <button type="submit">Add Challenge</button>
+    </form>
+    
+    <script>
+        document.getElementById('addChallengeForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const text = document.getElementById('challengeText').value;
+            
+            try {
+                const response = await fetch('/api/challenges', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ text: text })
+                });
+                
+                if (response.ok) {
+                    window.location.reload();
+                } else {
+                    alert('Error adding challenge');
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        });
+
+        async function generateTestData() {
+            try {
+                const response = await fetch('/api/test-data/generate?year=#(year)', {
+                    method: 'POST'
+                });
+                
+                if (response.ok) {
+                    window.location.reload();
+                } else {
+                    alert('Error generating test data');
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html>

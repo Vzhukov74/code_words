@@ -9,30 +9,24 @@ import Vapor
 import Fluent
 import FluentSQLiteDriver
 
-final class SolitaireResult: Model, Content {
-    static let schema = "SolitaireResults"
 
-    @ID(custom: "id")
-    var id: String?
-    
-    @Field(key: "name") var name: String
-    @Field(key: "points") var points: Int
-    @Field(key: "year") var year: Int
-    @Field(key: "week") var week: Int
-}
 
-struct CreateSolitaireResult: AsyncMigration {
-    func prepare(on database: Database) async throws {
-        try await database.schema(SolitaireResult.schema)
-            .field("id", .string, .identifier(auto: false))
-            .field("name", .string)
-            .field("points", .int)
-            .field("year", .int)
-            .field("week", .int)
-            .create()
-    }
 
-    func revert(on database: Database) async throws {
-        try await database.schema(SolitaireResult.schema).delete()
-    }
-}
+
+//struct AddPlayerResultIndexes: Migration {
+//    func prepare(on database: Database) -> EventLoopFuture<Void> {
+//        database.schema("solitaire_player_results")
+//            .unique(on: "player_id", "year") // Ensure one result per player per year
+//            .index(on: "year")                // Speed up year-based queries
+//            .index(on: "points")              // Speed up sorting by points
+//            .update()
+//    }
+//
+//    func revert(on database: Database) -> EventLoopFuture<Void> {
+//        database.schema("solitaire_player_results")
+//            .deleteIndex(on: "year")
+//            .deleteIndex(on: "points")
+//            .deleteUnique(on: "player_id", "year")
+//            .update()
+//    }
+//}

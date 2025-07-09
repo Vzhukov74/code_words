@@ -78,7 +78,7 @@ COPY --from=build --chown=vapor:vapor /staging /app
 ENV SWIFT_BACKTRACE=enable=yes,sanitize=yes,threads=all,images=all,interactive=no,swift-backtrace=./swift-backtrace-static
 
 # Ensure all further commands run as the vapor user
-USER vapor:vapor
+# USER vapor:vapor
 
 # Let Docker bind to port 8080
 EXPOSE 8080

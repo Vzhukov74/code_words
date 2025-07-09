@@ -17,7 +17,7 @@ final class SolitaireGame: Model, Content {
     
     @Field(key: "challenge") var challenge: String
     @Field(key: "year") var year: Int
-    @Field(key: "week") var week: Int
+    @Field(key: "day") var day: Int
 }
 
 struct CreateSolitaireGame: AsyncMigration {
@@ -26,7 +26,7 @@ struct CreateSolitaireGame: AsyncMigration {
             .field("id", .string, .identifier(auto: false))
             .field("challenge", .string)
             .field("year", .int)
-            .field("week", .int)
+            .field("day", .int)
             .create()
     }
 

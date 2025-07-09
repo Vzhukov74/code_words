@@ -22,7 +22,9 @@ public func configure(_ app: Application) async throws {
     }
     
     app.migrations.add(CreateSolitaireGame())
-    app.migrations.add(CreateSolitaireResult())
+    app.migrations.add(CreateSolitairePlayer())
+    app.migrations.add(CreateSolitairePlayerResult())
+    app.migrations.add(CreateSolitaireChallenge())
     try await app.autoMigrate()
         
     let evnRedisUrl = Environment.get("REDIS_URL") ?? "redis://127.0.0.1:6379"
@@ -31,12 +33,11 @@ public func configure(_ app: Application) async throws {
     app.redis.configuration = redisConfiguration
     app.queues.use(.redis(redisConfiguration))
 
-    try await SolitaireWeekAndYearNumberJob.setupWeekAndYearNumber(for: app)
+    //try await SolitaireDayAndYearNumberJob.setupWeekAndYearNumber(for: app)
     
-    app.queues.schedule(SolitaireWeekAndYearNumberJob())
-        .weekly()
-        .on(.sunday)
-        .at(.midnight)
+//    app.queues.schedule(SolitaireDayAndYearNumberJob())
+//        .daily()
+//        .at(.midnight)
     
     app.gameService = GameService()
 
@@ -46,6 +47,10 @@ public func configure(_ app: Application) async throws {
 }
 
 extension Application {
+    func getDayNumber() async throws -> Int {
+        try await cache.get("app.solitaire.day.number", as: Int.self) ?? 0
+    }
+    
     func getWeekNumber() async throws -> Int {
         try await cache.get("app.solitaire.week.number", as: Int.self) ?? 0
     }
@@ -56,6 +61,10 @@ extension Application {
     
     func setWeekNumber(value: Int) async throws {
         try await cache.set("app.solitaire.week.number", to: value)
+    }
+    
+    func setDayNumber(value: Int) async throws {
+        try await cache.set("app.solitaire.day.number", to: value)
     }
 
     func setYearNumber(value: Int) async throws {

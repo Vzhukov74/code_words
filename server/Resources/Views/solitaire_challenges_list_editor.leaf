@@ -102,23 +102,24 @@
             const week = document.getElementById('week').value;
             const challenge = document.getElementById('challenge').value;
             
-            var xhr = new XMLHttpRequest();
+            let xhr = new XMLHttpRequest();
             xhr.onreadystatechange = function () {}
             
-            var jsonData = {
+            let jsonData = {
                 id: year + "_" + week,
                 challenge: challenge,
                 year: parseInt(year),
                 week: parseInt(week)
             };
-            var jsonString = JSON.stringify(jsonData);
+            let jsonString = JSON.stringify(jsonData);
       
+            let baseUrl = window.location.host
       
-            xhr.open('post', 'http://127.0.0.1:8080' + '/solitaire/challenge', true);
+            xhr.open('post', baseUrl + '/solitaire/challenge', true);
             xhr.setRequestHeader('Content-Type', 'application/json');
             xhr.send(jsonString);
                       
-                      location.reload(true);
+            location.reload(true);
         }
     </script>
   </body>

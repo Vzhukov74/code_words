@@ -11,3 +11,4 @@ db.sqlite
 ! .env.example
 .vscode
 server/docker-images/
+server/storage
