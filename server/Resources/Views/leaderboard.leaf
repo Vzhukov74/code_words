@@ -1,0 +1,98 @@
+<!-- Resources/Views/leaderboard.leaf -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Leaderboard</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 1000px; margin: 0 auto; padding: 20px; }
+        h1 { color: #333; text-align: center; }
+        .controls { display: flex; justify-content: space-between; margin: 20px 0; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background-color: #f2f2f2; position: sticky; top: 0; }
+        tr:hover { background-color: #f5f5f5; }
+        .position { width: 50px; text-align: center; }
+        .points { width: 100px; text-align: right; }
+        button {
+            padding: 8px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button:hover { background-color: #45a049; }
+        .top3 { font-weight: bold; }
+        .gold { color: #FFD700; }
+        .silver { color: #C0C0C0; }
+        .bronze { color: #CD7F32; }
+    </style>
+</head>
+<body>
+    <h1>Leaderboard for Week #(week) of #(year)</h1>
+    
+    <div class="controls">
+        <div>
+            <form id="weekSelector" style="display: inline-block;">
+                <label for="year">Year:</label>
+                <input type="number" id="year" name="year" value="#(year)" min="2000" max="2100" style="width: 80px;">
+                
+                <label for="week" style="margin-left: 10px;">Week:</label>
+                <input type="number" id="week" name="week" value="#(week)" min="1" max="52" style="width: 60px;">
+                
+                <button type="submit" style="margin-left: 10px;">Go</button>
+            </form>
+        </div>
+        
+        <button onclick="generateTestData()">Generate Test Data</button>
+    </div>
+    
+    <table>
+        <thead>
+            <tr>
+                <th class="position">#</th>
+                <th>Player</th>
+                <th class="points">Points</th>
+            </tr>
+        </thead>
+        <tbody>
+                #for(player in players):
+                <tr class="#if(player.position == 1) { gold } #if(player.position == 2) { silver } #if(player.position == 3) { bronze } #if(player.position <= 3) { top3 }">
+                    <td class="position">#(player.position)</td>
+                    <td>#(player.name)</td>
+                    <td class="points">#(player.points)</td>
+                </tr>
+        #endfor
+        </tbody>
+    </table>
+    
+    <script>
+        // Handle week/year selection
+        document.getElementById('weekSelector').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const year = document.getElementById('year').value;
+            const week = document.getElementById('week').value;
+            window.location.href = `/leaderboard/${year}/${week}`;
+        });
+        
+        // Generate test data
+        async function generateTestData() {
+            try {
+                const response = await fetch('/solitaire/player/api/test-data/generate', {
+                    method: 'POST'
+                });
+                
+                if (response.ok) {
+                    window.location.reload();
+                } else {
+                    alert('Error generating test data');
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html>
+

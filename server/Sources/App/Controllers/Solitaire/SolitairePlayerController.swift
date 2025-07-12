@@ -1,17 +1,17 @@
 //
-//  SolitaireController.swift
+//  SolitairePlayerController.swift
 //  code_word_server
 //
 //  Created by Vladislav Zhukov on 06.04.2025.
 //
 
 import Foundation
-import Vapor
+@preconcurrency import Vapor
 import FluentKit
 import FluentSQL
 import FluentSQLiteDriver
 
-actor SolitaireController: RouteCollection {
+actor SolitairePlayerController: RouteCollection {
     
     struct PlayerRatingResponse: Content {
         let players: [SolitairePlayer] // first ten
@@ -41,54 +41,29 @@ actor SolitaireController: RouteCollection {
         let challengeDay: Int
     }
     
-    struct UploadChallengeRequest: Content {
-        let value: String
-    }
-    
-    struct ChallengeResponse: Content {
-        let id: UUID
-        let value: String
+    struct LeaderboardViewContext: Encodable {
         let year: Int
-        let day: Int
-    }
-    
-    struct ChallengesResponse: Content {
-        let challenges: [Dto]
+        let week: Int
+        let players: [PlayerRanking]
         
-        struct Dto: Content {
-            let value: String
-            let day: Int
+        struct PlayerRanking: Encodable {
+            let position: Int
+            let name: String
+            let points: Int
         }
     }
-    
-    struct ChallengesViewContext: Encodable {
-        let year: Int
-        let challenges: [ChallengeView]
         
-        struct ChallengeView: Encodable {
-            let day: Int
-            let text: String
-            let isToday: Bool
-        }
-    }
-    
     nonisolated func boot(routes: any RoutesBuilder) throws {
-        //        routes.get("solitaire", use: mainPage)
-        
-        routes.group("solitaire") { route in
+        routes.group("solitaire", "player") { route in
             route.get("rating", use: rating)
             route.post("rating", use: updateRating)
-            
-            route.post("challenge", use: challenge)
-            route.post("challenges", use: challenges)
-            route.post("challenge", use: uploadChallenge)
-            
-            // MARK: for tests
-            route.get("fill-with-test-data", use: fillWithTestData)
+        }
+        
+        // MARK: for tests
+        routes.group("solitaire", "player", "api") { route in
+            route.post("test-data", "generate", use: fillWithTestData)
             route.get("leaderboard", use: leaderBoard)
-            
-            route.get("challenges", ":year", use: showChallengesForYear)
-            route.post("api", "test-data", "generate", use: generateTestData)
+            route.get("leaderboard", ":year", ":week", use: showLeaderboard)
         }
     }
     
@@ -141,15 +116,7 @@ actor SolitaireController: RouteCollection {
         guard let sql = req.db as? SQLDatabase else {
             throw Abort(.internalServerError, reason: "Database doesn't support raw SQL")
         }
-        
-        let player = try await SolitairePlayer.find(UUID(uuidString: id)!, on: req.db)
-        
-        let result = try await SolitairePlayerResult.query(on: req.db)
-            .filter(\.$player.$id == UUID(uuidString: id)!)
-            .filter(\.$year == year)
-            .filter(\.$week == week)
-            .first()
-        
+                
         let query = """
         SELECT position FROM (
             SELECT 
@@ -277,148 +244,29 @@ actor SolitaireController: RouteCollection {
         
         return .ok
     }
-    
-    @Sendable private func uploadChallenge(req: Request) async throws -> HTTPStatus {
-        let request = try req.content.decode(UploadChallengeRequest.self)
-        
-        let calendar = Calendar.current
-        let today = Date()
-        var year = calendar.component(.year, from: today)
-        var day = calendar.component(.day, from: today)
-        
-        // Find the latest challenge to determine if we need to increment
-        if let latest = try await SolitaireChallenge.query(on: req.db)
-            .sort(\.$year, .descending)
-            .sort(\.$day, .descending)
-            .first() {
-            
-            day = latest.day + 1
-            year = latest.year
-            
-            let daysInYear = calendar.range(of: .day, in: .year, for: today)!.count
-            if day > daysInYear {
-                day = 1
-                year += 1
-            }
+
+    @Sendable private func showLeaderboard(req: Request) async throws -> View {
+        guard let year = req.parameters.get("year", as: Int.self),
+              let week = req.parameters.get("week", as: Int.self) else {
+            throw Abort(.badRequest, reason: "Invalid year or week parameter")
         }
         
-        // Check if challenge for this day/year already exists
-        if try await SolitaireChallenge.query(on: req.db)
-            .filter(\.$year == year)
-            .filter(\.$day == day)
-            .first() != nil {
-            throw Abort(.conflict, reason: "Challenge already exists for day \(day), year \(year)")
-        }
-        
-        // Validate challenge text is unique
-        if try await SolitaireChallenge.query(on: req.db)
-            .filter(\.$value == request.value)
-            .first() != nil {
-            throw Abort(.conflict, reason: "Challenge text must be unique")
-        }
-        
-        // Create and save new challenge
-        let challenge = SolitaireChallenge(value: request.value, year: year, day: day)
-        try await challenge.save(on: req.db)
-        
-        return .ok
-    }
-    
-    @Sendable private func challenge(req: Request) async throws -> ChallengeResponse {
-        let calendar = Calendar.current
-        let today = Date()
-        let year = calendar.component(.year, from: today)
-        let day = calendar.component(.day, from: today)
+        let results = try await leaderBoard(req: req)
                 
-        guard let challenge = try await SolitaireChallenge.query(on: req.db)
-            .filter(\.$year == year)
-            .filter(\.$day == day)
-            .first() else {
-                throw Abort(.notFound, reason: "No challenge found for today")
-            }
-        
-        return ChallengeResponse(
-            id: try challenge.requireID(),
-            value: challenge.value,
-            year: challenge.year,
-            day: challenge.day
-        )
-    }
-    
-    @Sendable private func challenges(req: Request) async throws -> ChallengesResponse {
-        guard let year = req.parameters.get("year", as: Int.self) else {
-            throw Abort(.badRequest, reason: "Invalid year parameter")
-        }
-                
-        let challenges = try await SolitaireChallenge.query(on: req.db)
-            .filter(\.$year == year)
-            .sort(\.$day, .ascending)
-            .all()
-                
-        return ChallengesResponse(
-            challenges: challenges.compactMap {
-                ChallengesResponse.Dto(
-                    value: $0.value,
-                    day: $0.day
-                )
-            }
-        )
-    }
-    
-    @Sendable private func showChallengesForYear(req: Request) async throws -> View {
-        guard let year = req.parameters.get("year", as: Int.self) else {
-            throw Abort(.badRequest, reason: "Invalid year parameter")
-        }
-        
-        // Get current day of year
-        let calendar = Calendar.current
-        let today = Date()
-        let currentDay = calendar.component(.day, from: today)
-        let currentYear = calendar.component(.year, from: today)
-        
-        // Get challenges from API
-        let challenges = try await SolitaireChallenge.query(on: req.db)
-            .filter(\.$year == year)
-            .sort(\.$day, .ascending)
-            .all()
-        
-        // Prepare view context
-        let viewChallenges = challenges.map { challenge in
-            ChallengesViewContext.ChallengeView(
-                day: challenge.day,
-                text: challenge.value,
-                isToday: challenge.year == currentYear && challenge.day == currentDay
+        let players = results.players.enumerated().compactMap { index in
+            LeaderboardViewContext.PlayerRanking(
+                position: index.offset + 1,
+                name: index.element.name,
+                points: index.element.points
             )
         }
         
-        let context = ChallengesViewContext(
+        let context = LeaderboardViewContext(
             year: year,
-            challenges: viewChallenges
+            week: week,
+            players: players
         )
         
-        return try await req.view.render("challenges", context)
-    }
-    
-    func generateTestData(req: Request) async throws -> HTTPStatus {
-        let year = try req.query.get(Int.self, at: "year")
-        let daysInYear = Calendar.current.range(of: .day, in: .year, for: Date())!.count
-        
-        // Delete existing challenges for this year
-        try await SolitaireChallenge.query(on: req.db)
-            .filter(\.$year == year)
-            .delete()
-        
-        // Create test challenges for each day
-        for day in 1...daysInYear {
-            let challengeText = "Challenge for day \(day) of \(year)"
-            let challenge = SolitaireChallenge(
-                value: challengeText,
-                year: year,
-                day: day
-            )
-            try await challenge.save(on: req.db)
-        }
-        
-        return .created
+        return try await req.view.render("leaderboard", context)
     }
 }

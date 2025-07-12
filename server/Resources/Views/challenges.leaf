@@ -33,12 +33,12 @@
             </tr>
         </thead>
         <tbody>
-            #for(challenge in challenges) {
+            #for(challenge in challenges):
                 <tr #if(challenge.isToday) { class="today" }>
                     <td>#(challenge.day)</td>
                     <td>#(challenge.text)</td>
                 </tr>
-            }
+            #endfor
         </tbody>
     </table>
     
@@ -54,12 +54,12 @@
             const text = document.getElementById('challengeText').value;
             
             try {
-                const response = await fetch('/api/challenges', {
+                const response = await fetch('/solitaire/api/challenge', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ text: text })
+                    body: JSON.stringify({ value: text })
                 });
                 
                 if (response.ok) {
@@ -74,7 +74,7 @@
 
         async function generateTestData() {
             try {
-                const response = await fetch('/api/test-data/generate?year=#(year)', {
+                const response = await fetch('/solitaire/api/test-data/generate?year=#(year)', {
                     method: 'POST'
                 });
                 
@@ -87,6 +87,33 @@
                 alert('Error: ' + error.message);
             }
         }
+
+        async function updateChallenge(challengeId, currentText, year, day) {
+                const newText = prompt("Edit challenge text:", currentText);
+                if (newText && newText !== currentText) {
+                    try {
+                        const response = await fetch(`/solitaire/api/challenge/update`, {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                text: newText,
+                                year: year,
+                                day: day
+                            })
+                        });
+                        
+                        if (response.ok) {
+                            window.location.reload();
+                        } else {
+                            alert('Error updating challenge');
+                        }
+                    } catch (error) {
+                        alert('Error: ' + error.message);
+                    }
+                }
+            }
     </script>
 </body>
 </html>
