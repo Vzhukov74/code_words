@@ -1,0 +1,41 @@
+name: Deploy to Production on Merge to Master
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Login to Docker Hub (if needed)
+      if: false  # Set to true if you need to push to a registry
+      env:
+        DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
+        DOCKER_HUB_PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD }}
+      run: |
+        echo "$DOCKER_HUB_PASSWORD" | docker login -u "$DOCKER_HUB_USERNAME" --password-stdin
+    
+    - name: Build and Deploy
+      env:
+        SERVER_USER: ${{ secrets.user }}
+        SERVER_IP: ${{ secrets.ip }}
+        SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+      run: |
+        # Set up SSH
+        mkdir -p ~/.ssh
+        echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        
+        # Install sshpass for password-less SSH (if key is properly set up)
+        sudo apt-get update && sudo apt-get install -y sshpass
+        
+        # Create docker-images directory if it doesn't exist
+        cd server
+        
+        mkdir -p ./docker-images
+        
+        sh ./deploy.sh
