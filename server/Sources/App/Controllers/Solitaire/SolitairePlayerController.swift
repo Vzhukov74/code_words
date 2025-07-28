@@ -14,7 +14,13 @@ import FluentSQLiteDriver
 actor SolitairePlayerController: RouteCollection {
     
     struct PlayerRatingResponse: Content {
-        let players: [SolitairePlayer] // first ten
+        struct Player: Content {
+            let name: String
+            let id: String
+            let points: Int
+        }
+        
+        let players: [Player] // first ten
         let position: Int? // current player place
     }
     
@@ -89,7 +95,7 @@ actor SolitairePlayerController: RouteCollection {
             .with(\.$player)
             .limit(10)
             .all()
-            .compactMap { $0.player }
+            .compactMap { PlayerRatingResponse.Player(name: $0.player.id?.uuidString ?? "", id: $0.player.name, points: $0.points) }
         
         let position: Int? = try? await position(by: id, year: year!, week: week!, req: req)
         
@@ -270,3 +276,5 @@ actor SolitairePlayerController: RouteCollection {
         return try await req.view.render("leaderboard", context)
     }
 }
+
+// выводить рейтинг первых 10 игроков с points
