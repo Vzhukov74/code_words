@@ -22,6 +22,7 @@ actor SolitairePlayerController: RouteCollection {
         
         let players: [Player] // first ten
         let position: Int? // current player place
+        let points: Int? // current player points
     }
     
     struct RankResult: Decodable {
@@ -41,10 +42,9 @@ actor SolitairePlayerController: RouteCollection {
     
     struct UpdateRatingRequest: Content {
         let playerId: String
-        let year: Int
-        let week: Int
+        let playerName: String
+        let challengeId: String
         let points: Int
-        let challengeDay: Int
     }
     
     struct LeaderboardViewContext: Encodable {
@@ -61,7 +61,7 @@ actor SolitairePlayerController: RouteCollection {
         
     nonisolated func boot(routes: any RoutesBuilder) throws {
         routes.group("solitaire", "player") { route in
-            route.get("rating", use: rating)
+            route.get("day-rating", use: dayRating)
             route.post("rating", use: updateRating)
         }
         
@@ -75,7 +75,7 @@ actor SolitairePlayerController: RouteCollection {
     
     // MARK: public routes
     
-    @Sendable private func rating(req: Request) async throws -> PlayerRatingResponse {
+    @Sendable private func dayRating(req: Request) async throws -> PlayerRatingResponse {
         guard let id = req.parameters.get("id") else { throw Abort(.badRequest) }
         
         var year: Int? = req.parameters.get("year")
@@ -83,23 +83,29 @@ actor SolitairePlayerController: RouteCollection {
             year = try await req.application.getYearNumber()
         }
         
-        var week: Int? = req.parameters.get("week")
-        if week == nil {
-            week = try await req.application.getDayNumber()
+        var day: Int? = req.parameters.get("day")
+        if day == nil {
+            day = try await req.application.getDayNumber()
         }
         
-        let topTen = try await SolitairePlayerResult.query(on: req.db)
+        guard let challenge = try await SolitaireChallenge.query(on: req.db)
             .filter(\.$year == year!)
-            .filter(\.$week == week!)
+            .filter(\.$day == day!)
+            .first() else { throw Abort(.badRequest) }
+        
+        let topTen = try await DayChamp.query(on: req.db)
+            .filter(\.$challenge.$id == challenge.requireID())
             .sort(\.$points, .descending)
             .with(\.$player)
             .limit(10)
             .all()
             .compactMap { PlayerRatingResponse.Player(name: $0.player.id?.uuidString ?? "", id: $0.player.name, points: $0.points) }
-        
-        let position: Int? = try? await position(by: id, year: year!, week: week!, req: req)
-        
-        return PlayerRatingResponse(players: topTen, position: position)
+
+        if let (position, points) = try? await dayPosition(by: id, challenge: challenge.requireID().uuidString, req: req) {
+            return PlayerRatingResponse(players: topTen, position: position, points: points)
+        } else {
+            return PlayerRatingResponse(players: topTen, position: nil, points: nil)
+        }
     }
     
     @Sendable private func playerPosition(req: Request) async throws -> Int {
@@ -146,6 +152,39 @@ actor SolitairePlayerController: RouteCollection {
         }
         
         return row.position
+    }
+    
+    @Sendable private func dayPosition(by playerId: String, challenge: String, req: Request) async throws -> (Int, Int) {
+        guard let sql = req.db as? SQLDatabase else {
+            throw Abort(.internalServerError, reason: "Database doesn't support raw SQL")
+        }
+                
+        let query = """
+        SELECT position, points FROM (
+            SELECT 
+                player_id,
+                points, 
+                ROW_NUMBER() OVER (ORDER BY points DESC) as position
+            FROM DayChamp dc
+            JOIN SolitaireChallenge c ON dc.challenge_id = c.id
+            WHERE ic.id = \(challenge)
+        ) ranked_results
+        WHERE player_id = \(playerId)
+        """
+        
+        struct RankingPosition: Decodable {
+            let position: Int
+            let points: Int
+        }
+        
+        let row = try await sql.raw(SQLQueryString(query))
+            .first(decoding: RankingPosition.self)
+        
+        guard let row = row else {
+            throw Abort(.notFound, reason: "Could not determine ranking for player")
+        }
+        
+        return (row.position, row.points)
     }
     
     @Sendable private func fillWithTestData(req: Request) async throws -> HTTPStatus {
@@ -226,27 +265,27 @@ actor SolitairePlayerController: RouteCollection {
     @Sendable private func updateRating(req: Request) async throws -> HTTPStatus {
         let request = try req.content.decode(UpdateRatingRequest.self)
         
-        let result = try await SolitairePlayerResult.query(on: req.db)
-            .filter(\.$player.$id == UUID(uuidString: request.playerId)!)
-            .filter(\.$year == request.year)
-            .filter(\.$week == request.week)
-            .first()
-        ?? SolitairePlayerResult(
-            playerID: UUID(uuidString: request.playerId)!,
-            year: request.year,
-            week: request.week
+        guard let playerId = UUID(uuidString: request.playerId), let challengeId = UUID(uuidString: request.challengeId)
+        else { return HTTPStatus.badRequest }
+        
+        guard let challenge = try await SolitaireChallenge.query(on: req.db)
+            .filter(\.$id == challengeId)
+            .first() else { return HTTPStatus.badRequest }
+        
+        // save new players, if needed
+        let player = try await createOrUpdatePlayer(
+            playerId:  playerId,
+            playerName: request.playerName,
+            on: req
         )
         
-        if let existingPoints = result.dayPoints[request.challengeDay] {
-            guard request.points > existingPoints else {
-                return .ok
-            }
-        }
-        
-        result.dayPoints[request.challengeDay] = request.points
-        result.points = result.dayPoints.values.reduce(0, +)
-        
-        try await result.save(on: req.db)
+        // save result
+        try await createOrUpdateDayChamp(
+            player: player,
+            challenge: challenge,
+            points: request.points,
+            on: req
+        )
         
         return .ok
     }
@@ -275,6 +314,60 @@ actor SolitairePlayerController: RouteCollection {
         
         return try await req.view.render("leaderboard", context)
     }
+    
+    // MARK: helpers
+    
+    @Sendable private func createOrUpdatePlayer(playerId: UUID, playerName: String, on req: Request) async throws -> SolitairePlayer {
+        if let player = try await SolitairePlayer.query(on: req.db)
+            .filter(\.$id == playerId)
+            .first() {
+            player.name = playerName
+            try await  player.save(on: req.db)
+            return player
+        } else {
+            let player = SolitairePlayer(
+                id: playerId,
+                name: playerName
+            )
+            try await  player.save(on: req.db)
+            return player
+        }
+    }
+    
+    @Sendable private func createOrUpdateDayChamp(
+        player: SolitairePlayer,
+        challenge: SolitaireChallenge,
+        points: Int,
+        on req: Request
+    ) async throws {
+        let dayChamp = try await DayChamp.query(on: req.db)
+            .filter(\.$challenge.$id == challenge.requireID())
+            .filter(\.$player.$id == player.requireID())
+            .first()
+        ?? DayChamp(player: player, challenge: challenge, points: points)
+        
+        dayChamp.points = points
+        
+        try await dayChamp.save(on: req.db)
+    }
 }
 
-// выводить рейтинг первых 10 игроков с points
+
+/*
+
+1) Проверка, что место работает
+2) Кэширование таблицы лидеров дня
+3) Таблица лидеров недели
+4) Кэширование таблици лидеров недели
+6) UI для просмотра
+7) через gpt сделать на реакте, что бы был токен
+8) кэщирование игры дня
+9) job на переключение игры дня
+10) добавить таблицу в UI
+11) скрины и описание
+12) онбординг, что появился новая механика
+13) общие тесты
+14) обновить сервер + тесты
+15) подготовить сборку и отправить на ревью
+ 
+*/

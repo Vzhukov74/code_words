@@ -23,6 +23,7 @@ public func configure(_ app: Application) async throws {
     
     app.migrations.add(CreateSolitaireGame())
     app.migrations.add(CreateSolitairePlayer())
+    app.migrations.add(CreateDayChamp())
     app.migrations.add(CreateSolitairePlayerResult())
     app.migrations.add(CreateSolitaireChallenge())
     try await app.autoMigrate()
