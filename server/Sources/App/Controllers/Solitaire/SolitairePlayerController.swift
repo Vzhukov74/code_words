@@ -11,6 +11,17 @@ import FluentKit
 import FluentSQL
 import FluentSQLiteDriver
 
+struct LeaderboardResponse: Content {
+    let year: Int
+    let week: Int
+    let players: [PlayerScore]
+    
+    struct PlayerScore: Content {
+        let name: String
+        let points: Int
+    }
+}
+
 actor SolitairePlayerController: RouteCollection {
     
     struct PlayerRatingResponse: Content {
@@ -19,25 +30,17 @@ actor SolitairePlayerController: RouteCollection {
             let id: String
             let points: Int
         }
+        struct PlayerPosition: Content {
+            let position: Int
+            let points: Int
+        }
         
         let players: [Player] // first ten
-        let position: Int? // current player place
-        let points: Int? // current player points
+        let position: PlayerPosition?
     }
     
     struct RankResult: Decodable {
         let rank: Int
-    }
-    
-    struct LeaderboardResponse: Content {
-        let year: Int
-        let week: Int
-        let players: [PlayerScore]
-        
-        struct PlayerScore: Content {
-            let name: String
-            let points: Int
-        }
     }
     
     struct UpdateRatingRequest: Content {
@@ -47,34 +50,58 @@ actor SolitairePlayerController: RouteCollection {
         let points: Int
     }
     
-    struct LeaderboardViewContext: Encodable {
-        let year: Int
-        let week: Int
-        let players: [PlayerRanking]
-        
-        struct PlayerRanking: Encodable {
-            let position: Int
-            let name: String
-            let points: Int
-        }
-    }
-        
     nonisolated func boot(routes: any RoutesBuilder) throws {
         routes.group("solitaire", "player") { route in
-            route.get("day-rating", use: dayRating)
             route.post("rating", use: updateRating)
-        }
-        
-        // MARK: for tests
-        routes.group("solitaire", "player", "api") { route in
-            route.post("test-data", "generate", use: fillWithTestData)
-            route.get("leaderboard", use: leaderBoard)
-            route.get("leaderboard", ":year", ":week", use: showLeaderboard)
+            
+            route.get("day-rating", ":id", use: dayRating)
+            route.get("week-rating", ":id", use: weekRating)
         }
     }
     
     // MARK: public routes
-    
+
+    @Sendable private func updateRating(req: Request) async throws -> HTTPStatus {
+        let request = try req.content.decode(UpdateRatingRequest.self)
+        
+        guard let playerId = UUID(uuidString: request.playerId), let challengeId = UUID(uuidString: request.challengeId)
+        else { return HTTPStatus.badRequest }
+        
+        guard let challenge = try await SolitaireChallenge.query(on: req.db)
+            .filter(\.$id == challengeId)
+            .first() else { return HTTPStatus.badRequest }
+        
+        // save new players, if needed
+        let player = try await SolitairePlayer.createOrUpdate(
+            playerId:  playerId,
+            playerName: request.playerName,
+            on: req.db
+        )
+        
+        // save result
+        let weekChamp = try await WeekChamp.createOrUpdate(
+            player: player,
+            week: req.application.getWeekNumber(),
+            year: req.application.getYearNumber(),
+            on: req.db
+        )
+
+        let dayChamp = try await DayChamp.createOrUpdate(
+            player: player,
+            challenge: challenge,
+            weekChamp: weekChamp,
+            points: request.points,
+            on: req.db
+        )
+        
+        let topTen = try await req.application.cacheService.getDayLeaders() ?? []
+        if topTen.isEmpty || (topTen.last?.points ?? 0) < dayChamp.points {
+            try await updateAndCacheDayRating(day: challenge.day, year: challenge.year, req: req)
+        }
+        
+        return .ok
+    }
+
     @Sendable private func dayRating(req: Request) async throws -> PlayerRatingResponse {
         guard let id = req.parameters.get("id") else { throw Abort(.badRequest) }
         
@@ -93,22 +120,16 @@ actor SolitairePlayerController: RouteCollection {
             .filter(\.$day == day!)
             .first() else { throw Abort(.badRequest) }
         
-        let topTen = try await DayChamp.query(on: req.db)
-            .filter(\.$challenge.$id == challenge.requireID())
-            .sort(\.$points, .descending)
-            .with(\.$player)
-            .limit(10)
-            .all()
-            .compactMap { PlayerRatingResponse.Player(name: $0.player.id?.uuidString ?? "", id: $0.player.name, points: $0.points) }
+        let topTen = try await req.application.cacheService.getDayLeaders()?.compactMap {
+            PlayerRatingResponse.Player(name: $0.name, id: $0.id.uuidString, points: $0.points)
+        } ?? []
 
-        if let (position, points) = try? await dayPosition(by: id, challenge: challenge.requireID().uuidString, req: req) {
-            return PlayerRatingResponse(players: topTen, position: position, points: points)
-        } else {
-            return PlayerRatingResponse(players: topTen, position: nil, points: nil)
-        }
+        let position = try? await dayPosition(by: id, challenge: challenge.requireID().uuidString, req: req)
+        
+        return PlayerRatingResponse(players: topTen, position: position)
     }
-    
-    @Sendable private func playerPosition(req: Request) async throws -> Int {
+
+    @Sendable private func weekRating(req: Request) async throws -> PlayerRatingResponse {
         guard let id = req.parameters.get("id") else { throw Abort(.badRequest) }
         
         var year: Int? = req.parameters.get("year")
@@ -116,258 +137,89 @@ actor SolitairePlayerController: RouteCollection {
             year = try await req.application.getYearNumber()
         }
         
-        var week: Int? = req.parameters.get("week")
-        if week == nil {
-            week = try await req.application.getDayNumber()
-        }
+        let week = try await req.application.getPreviousWeekNumber()
+
         
-        return try await position(by: id, year: year!, week: week!, req: req)
-    }
-    
-    @Sendable private func position(by id: String, year: Int, week: Int, req: Request) async throws -> Int {
-        guard let sql = req.db as? SQLDatabase else {
-            throw Abort(.internalServerError, reason: "Database doesn't support raw SQL")
-        }
-                
-        let query = """
-        SELECT position FROM (
-            SELECT 
-                player_id,
-                ROW_NUMBER() OVER (ORDER BY points DESC) as position
-            FROM solitaire_player_results
-            WHERE year = \(year) AND week = \(week)
-        ) ranked_results
-        WHERE player_id = \(id)
-        """
+        let topTen = try await req.application.cacheService.getWeekLeaders()?
+            .compactMap { PlayerRatingResponse.Player(name: $0.name, id: $0.id.uuidString, points: $0.points) } ?? []
+
+        let position = try? await weekPosition(by: id, year: year!, week: week, req: req)
         
-        struct RankingPosition: Decodable {
-            let position: Int
-        }
-        
-        let row = try await sql.raw(SQLQueryString(query))
-            .first(decoding: RankingPosition.self)
-        
-        guard let row = row else {
-            throw Abort(.notFound, reason: "Could not determine ranking for player")
-        }
-        
-        return row.position
-    }
-    
-    @Sendable private func dayPosition(by playerId: String, challenge: String, req: Request) async throws -> (Int, Int) {
-        guard let sql = req.db as? SQLDatabase else {
-            throw Abort(.internalServerError, reason: "Database doesn't support raw SQL")
-        }
-                
-        let query = """
-        SELECT position, points FROM (
-            SELECT 
-                player_id,
-                points, 
-                ROW_NUMBER() OVER (ORDER BY points DESC) as position
-            FROM DayChamp dc
-            JOIN SolitaireChallenge c ON dc.challenge_id = c.id
-            WHERE ic.id = \(challenge)
-        ) ranked_results
-        WHERE player_id = \(playerId)
-        """
-        
-        struct RankingPosition: Decodable {
-            let position: Int
-            let points: Int
-        }
-        
-        let row = try await sql.raw(SQLQueryString(query))
-            .first(decoding: RankingPosition.self)
-        
-        guard let row = row else {
-            throw Abort(.notFound, reason: "Could not determine ranking for player")
-        }
-        
-        return (row.position, row.points)
-    }
-    
-    @Sendable private func fillWithTestData(req: Request) async throws -> HTTPStatus {
-#if DEBUG
-        var year: Int? = req.parameters.get("year")
-        if year == nil {
-            year = 2025
-        }
-        
-        var week: Int? = req.parameters.get("week")
-        if week == nil {
-            week = 25
-        }
-        
-        let playerCount = 16
-        
-        try await SolitairePlayerResult.query(on: req.db)
-            .filter(\.$year == year!)
-            .filter(\.$week == week!)
-            .delete()
-        
-        for index in 0..<playerCount {
-            let playerName = "Player \(index)"
-            
-            let player = try await SolitairePlayer.query(on: req.db)
-                .filter(\.$name == playerName)
-                .first()
-            ?? SolitairePlayer(name: playerName)
-            
-            try await player.save(on: req.db)
-            
-            let result = SolitairePlayerResult(
-                playerID: try player.requireID(),
-                year: year!,
-                week: week!
-            )
-            result.points = Int.random(in: 1000...2000)
-            
-            try await result.save(on: req.db)
-        }
-        
-#endif
-        return .ok
-    }
-    
-    @Sendable private func leaderBoard(req: Request) async throws -> LeaderboardResponse {
-        var year: Int? = req.parameters.get("year")
-        if year == nil {
-            year = 2025
-        }
-        
-        var week: Int? = req.parameters.get("week")
-        if week == nil {
-            week = 25
-        }
-        
-        let results = try await SolitairePlayerResult.query(on: req.db)
-            .filter(\.$year == year!)
-            .filter(\.$week == week!)
-            .join(SolitairePlayer.self, on: \SolitairePlayerResult.$player.$id == \SolitairePlayer.$id)
-            .sort(\.$points, .descending)
-            .all()
-            .map { result -> LeaderboardResponse.PlayerScore in
-                let player = try result.joined(SolitairePlayer.self)
-                return LeaderboardResponse.PlayerScore(
-                    name: player.name,
-                    points: result.points
-                )
-            }
-        
-        return LeaderboardResponse(
-            year: year!,
-            week: week!,
-            players: results
-        )
-    }
-    
-    @Sendable private func updateRating(req: Request) async throws -> HTTPStatus {
-        let request = try req.content.decode(UpdateRatingRequest.self)
-        
-        guard let playerId = UUID(uuidString: request.playerId), let challengeId = UUID(uuidString: request.challengeId)
-        else { return HTTPStatus.badRequest }
-        
-        guard let challenge = try await SolitaireChallenge.query(on: req.db)
-            .filter(\.$id == challengeId)
-            .first() else { return HTTPStatus.badRequest }
-        
-        // save new players, if needed
-        let player = try await createOrUpdatePlayer(
-            playerId:  playerId,
-            playerName: request.playerName,
-            on: req
-        )
-        
-        // save result
-        try await createOrUpdateDayChamp(
-            player: player,
-            challenge: challenge,
-            points: request.points,
-            on: req
-        )
-        
-        return .ok
+        return PlayerRatingResponse(players: topTen, position: position)
     }
 
-    @Sendable private func showLeaderboard(req: Request) async throws -> View {
-        guard let year = req.parameters.get("year", as: Int.self),
-              let week = req.parameters.get("week", as: Int.self) else {
-            throw Abort(.badRequest, reason: "Invalid year or week parameter")
-        }
-        
-        let results = try await leaderBoard(req: req)
-                
-        let players = results.players.enumerated().compactMap { index in
-            LeaderboardViewContext.PlayerRanking(
-                position: index.offset + 1,
-                name: index.element.name,
-                points: index.element.points
-            )
-        }
-        
-        let context = LeaderboardViewContext(
-            year: year,
-            week: week,
-            players: players
-        )
-        
-        return try await req.view.render("leaderboard", context)
-    }
-    
     // MARK: helpers
-    
-    @Sendable private func createOrUpdatePlayer(playerId: UUID, playerName: String, on req: Request) async throws -> SolitairePlayer {
-        if let player = try await SolitairePlayer.query(on: req.db)
-            .filter(\.$id == playerId)
-            .first() {
-            player.name = playerName
-            try await  player.save(on: req.db)
-            return player
-        } else {
-            let player = SolitairePlayer(
-                id: playerId,
-                name: playerName
-            )
-            try await  player.save(on: req.db)
-            return player
-        }
+    @Sendable private func dayPosition(by playerId: String, challenge: String, req: Request) async throws -> PlayerRatingResponse.PlayerPosition {
+        guard let playerResult = try await DayChamp.query(on: req.db)
+            .filter(\.$challenge.$id == UUID(uuidString: challenge)!)
+            .filter(\.$player.$id == UUID(uuidString: playerId)!)
+            .first() else { throw Abort(.badRequest) }
+        
+        let position = try await DayChamp.query(on: req.db)
+            .filter(\.$challenge.$id == UUID(uuidString: challenge)!)
+            .filter(\.$points > playerResult.points)
+            .count()
+        
+        return PlayerRatingResponse.PlayerPosition(position: position + 1, points: playerResult.points)
     }
     
-    @Sendable private func createOrUpdateDayChamp(
-        player: SolitairePlayer,
-        challenge: SolitaireChallenge,
-        points: Int,
-        on req: Request
-    ) async throws {
-        let dayChamp = try await DayChamp.query(on: req.db)
+    @Sendable private func weekPosition(by playerId: String, year: Int, week: Int, req: Request) async throws -> PlayerRatingResponse.PlayerPosition {
+        guard let playerResult = try await WeekChamp.query(on: req.db)
+            .filter(\.$player.$id == UUID(uuidString: playerId)!)
+            .filter(\.$year == year)
+            .filter(\.$week == week)
+            .first() else { throw Abort(.badRequest) }
+        
+        let position = try await WeekChamp.query(on: req.db)
+            .filter(\.$year == year)
+            .filter(\.$week == week)
+            .filter(\.$points > playerResult.points)
+            .count()
+        
+        return PlayerRatingResponse.PlayerPosition(position: position + 1, points: playerResult.points)
+    }
+    
+    @Sendable private func updateAndCacheDayRating(day: Int, year: Int, req: Request) async throws {
+        guard let challenge = try await SolitaireChallenge.query(on: req.db)
+            .filter(\.$year == year)
+            .filter(\.$day == day)
+            .first() else { throw Abort(.badRequest) }
+        
+        let topTen = try await DayChamp.query(on: req.db)
             .filter(\.$challenge.$id == challenge.requireID())
-            .filter(\.$player.$id == player.requireID())
-            .first()
-        ?? DayChamp(player: player, challenge: challenge, points: points)
+            .sort(\.$points, .descending)
+            .with(\.$player)
+            .limit(10)
+            .all()
+            .compactMap { try? LeaderResult(id: $0.player.requireID(), name: $0.player.name, points: $0.points) }
         
-        dayChamp.points = points
-        
-        try await dayChamp.save(on: req.db)
+        try await req.application.cacheService.cacheDayLeaders(topTen)
     }
 }
 
 
 /*
 
-1) Проверка, что место работает
-2) Кэширование таблицы лидеров дня
-3) Таблица лидеров недели
-4) Кэширование таблици лидеров недели
-6) UI для просмотра
-7) через gpt сделать на реакте, что бы был токен
-8) кэщирование игры дня
-9) job на переключение игры дня
+1) Проверка, что место работает +
+1.1) Добавить кнопку для добавления дня в неделю и перепроверить все таблицы +
+3) Таблица лидеров недели +
+9) job на переключение игры дня +
+
+4) Кэширование таблици лидеров недели +
+2) Кэширование таблицы лидеров дня +
+8) кэщирование игры дня +
+20) отрицательная неделя +
+19) проверить (?)
+
 10) добавить таблицу в UI
 11) скрины и описание
 12) онбординг, что появился новая механика
-13) общие тесты
-14) обновить сервер + тесты
+
 15) подготовить сборку и отправить на ревью
  
+13) общие тесты
+14) обновить сервер + тесты
+ 
+ 6) UI для просмотра
+ 7) через gpt сделать на реакте, что бы был токен
 */

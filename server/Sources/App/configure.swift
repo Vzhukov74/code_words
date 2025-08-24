@@ -21,9 +21,12 @@ public func configure(_ app: Application) async throws {
         app.databases.use(.sqlite(.memory), as: .sqlite)
     }
     
+    app.databases.middleware.use(UpdateWeekChampPointsMiddleware())
+    
     app.migrations.add(CreateSolitaireGame())
     app.migrations.add(CreateSolitairePlayer())
     app.migrations.add(CreateDayChamp())
+    app.migrations.add(CreateWeekChamp())
     app.migrations.add(CreateSolitairePlayerResult())
     app.migrations.add(CreateSolitaireChallenge())
     try await app.autoMigrate()
@@ -33,42 +36,26 @@ public func configure(_ app: Application) async throws {
     
     app.redis.configuration = redisConfiguration
     app.queues.use(.redis(redisConfiguration))
-
-    //try await SolitaireDayAndYearNumberJob.setupWeekAndYearNumber(for: app)
     
-//    app.queues.schedule(SolitaireDayAndYearNumberJob())
-//        .daily()
-//        .at(.midnight)
+    try await SolitaireJobConfig.startInit(for: app)
+    //SolitaireJobConfig.setup(on: app.queues)
     
     app.gameService = GameService()
 
     await app.jwt.keys.add(hmac: "secret", digestAlgorithm: .sha256)
     
+    let dayNumber = try await app.getDayNumber()
+    let weekNumber = try await app.getWeekNumber()
+    let yearNumber = try await app.getYearNumber()
+    app.use { app in
+        try SolitaireCacheService(app: app)
+    }
+    
+    app.logger.info("""
+        - Year number: \(yearNumber)
+        - Week number: \(weekNumber)
+        - Day number: \(dayNumber)
+    """)
+    
     try routes(app)
-}
-
-extension Application {
-    func getDayNumber() async throws -> Int {
-        try await cache.get("app.solitaire.day.number", as: Int.self) ?? 0
-    }
-    
-    func getWeekNumber() async throws -> Int {
-        try await cache.get("app.solitaire.week.number", as: Int.self) ?? 0
-    }
-
-    func getYearNumber() async throws -> Int {
-        try await cache.get("app.solitaire.year.number", as: Int.self) ?? 0
-    }
-    
-    func setWeekNumber(value: Int) async throws {
-        try await cache.set("app.solitaire.week.number", to: value)
-    }
-    
-    func setDayNumber(value: Int) async throws {
-        try await cache.set("app.solitaire.day.number", to: value)
-    }
-
-    func setYearNumber(value: Int) async throws {
-        try await cache.set("app.solitaire.year.number", to: value)
-    }
 }

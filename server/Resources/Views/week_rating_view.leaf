@@ -30,7 +30,7 @@
     </style>
 </head>
 <body>
-    <h1>Leaderboard for Day #(week) of #(year)</h1>
+    <h1>Leaderboard for Week #(week) of #(year)</h1>
     
     <div class="controls">
         <div>
@@ -44,6 +44,9 @@
                 <button type="submit" style="margin-left: 10px;">Go</button>
             </form>
         </div>
+        
+        <button onclick="generateTestData()">Generate Test Data</button>
+        <button onclick="addDayChampResults()">add day champ results</button>
     </div>
     
     <table>
@@ -73,6 +76,41 @@
             const week = document.getElementById('week').value;
             window.location.href = `/leaderboard/${year}/${week}`;
         });
+
+        // Generate test data
+        async function generateTestData() {
+            try {
+                const response = await fetch('/solitaire/player/api/test-data/generate', {
+                    method: 'POST'
+                });
+                
+                if (response.ok) {
+                    window.location.reload();
+                } else {
+                    alert('Error generating test data');
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+
+        // Generate test data
+        async function addDayChampResults() {
+            try {
+                const response = await fetch('/solitaire/player/api/test-data/add-day-champ', {
+                    method: 'POST'
+                });
+                
+                if (response.ok) {
+                    window.location.reload();
+                } else {
+                    alert('Error generating test data');
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
     </script>
 </body>
 </html>
+

@@ -41,3 +41,22 @@ struct CreateSolitairePlayer: Migration {
         database.schema("solitaire_players").delete()
     }
 }
+
+extension SolitairePlayer {
+    static func createOrUpdate(playerId: UUID, playerName: String, on db: Database) async throws -> SolitairePlayer {
+        if let player = try await SolitairePlayer.query(on: db)
+            .filter(\.$id == playerId)
+            .first() {
+            player.name = playerName
+            try await  player.save(on: db)
+            return player
+        } else {
+            let player = SolitairePlayer(
+                id: playerId,
+                name: playerName
+            )
+            try await  player.save(on: db)
+            return player
+        }
+    }
+}

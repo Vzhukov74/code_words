@@ -8,6 +8,8 @@ func routes(_ app: Application) throws {
     try app.register(collection: SolitairePlayerController())
     try app.register(collection: SolitaireGameController())
     try app.register(collection: AuthController())
+    
+    try app.register(collection: SolitairePlayerDebugController())
 }
 
 extension WebSocket {
